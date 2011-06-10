@@ -8,7 +8,7 @@ _G["VM"]=VM
 VM.version = _VERSION
 VM.UIVer=select(4,GetBuildInfo())
 VM.LogLevel=1
-local LBF=LibBulkFunction
+local LT=LibThread
 
 VM.StatusCode={
 	none=0,
@@ -36,7 +36,7 @@ function VM:GetSafeLink(link)
 	if not link then return end
 	local _,link=GetItemInfo(link)
 	if not link then
-		if LBF:IsThread(self) and self.externalLib==VM then
+		if LT:IsThread(self) and self.externalLib==VM then
 			self:WaitEvent(5,"GET_ITEM_INFO_RECEIVED")
 			_,link=GetItemInfo(link)
 		else
@@ -53,7 +53,7 @@ function VM:GetItemID(link)
 		local reqlink=select(2,GetItemInfo(link))
 		if reqlink then
 			link=reqlink
-		elseif LBF:IsThread(self) and self.externalLib==VM then
+		elseif LT:IsThread(self) and self.externalLib==VM then
 			self:WaitEvent(5,"GET_ITEM_INFO_RECEIVED")
 			link=select(2,GetItemInfo(link))
 		else
@@ -137,7 +137,7 @@ end
 
 function VM:NewThread(func,prio)
 	local prio=prio or 50
-	local thread=LBF:New(func,prio)
+	local thread=LT:New(func,prio)
 	thread.externalLib=VM
 	return thread
 end

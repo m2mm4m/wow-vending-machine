@@ -5,7 +5,8 @@
 ## OptionalDeps: rLua
 ## SavedVariables: VendingMachineDB
 
-Astrolabe\Load.xml
+Libs\Astrolabe\Load.xml
+Libs\LibThread\LibThread.lua
 
 VendingMachine.lua
 CharControl.lua
