@@ -1,0 +1,16 @@
+﻿## Interface: 40100
+## Title: Vending Machine
+## Notes: Automatic auction addon
+## Author: llxibo
+## OptionalDeps: rLua
+## SavedVariables: VendingMachineDB
+
+Astrolabe\Load.xml
+
+VendingMachine.lua
+CharControl.lua
+HardwareDriver.lua
+Auctioning.lua
+Mail.lua
+Tradeskill.lua
+Localization.lua
