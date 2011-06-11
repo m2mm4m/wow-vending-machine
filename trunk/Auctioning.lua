@@ -161,22 +161,22 @@ function VM:TakeMails(MailPath,MailFacing,View)
 end
 
 VM.DEList={
-	52983,		--Cinderbloom
-	52984,		--Stormvine
-	-- 52985,		--Azshara's Veil
-	-- 52986,		--Heartblossom
 	52988,		--Whiptail
 	52987,		--Twilight Jasmine
+	52983,		--Cinderbloom
+	52984,		--Stormvine
+	52985,		--Azshara's Veil
+	-- 52986,		--Heartblossom
 	
 	52306,		--Jasper Ring
 	52492,		--Carnelian Spikes
 }
 VM.CraftList={
-	61978,		--Blackfallow Ink
+	-- 61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
 }
 VM.MailList={
-	-- [61979]="Chengguan",	--Ashen Pigment
+	[61979]="Chengguan",	--Ashen Pigment
 	-- [61980]="Millionaires",	--Burning Embers
 	[61978]="Tuixin",		--Blackfallow Ink
 	[61981]="Millionaires",	--Inferno Ink
@@ -210,7 +210,7 @@ VM:NewProcessor("AutoDE",function(self)
 		
 		if self:IsTradeskillOpen() then
 			for index,item in ipairs(VM.CraftList) do
-				if self:GetCraftingNumAvailable(item)>80 then
+				if self:GetCraftingNumAvailable(item)>=80 then
 					self:CraftItem(item)
 				end
 			end
