@@ -51,13 +51,13 @@ function VM:LootMailItem(item,quantity,taken)
 						
 						local _,event,msg
 						repeat
-							_,event,msg=self:WaitEvent(nil,"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE")
-						until not (event=="UI_ERROR_MESSAGE" and msg~=INVENTORY_FULL)
+							_,event,msg=self:WaitEvent(nil,"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
+						until not (event=="UI_ERROR_MESSAGE" and msg~=INVENTORY_FULL and msg~=ERR_MAIL_DATABASE_ERROR)
 						
 						totalTaken=totalTaken+count
 						if self:IsLastMail(mailID) then
 							--print("|cffffff00-Wait another update")
-							self:WaitEvent(5,"MAIL_INBOX_UPDATE")
+							self:WaitEvent(5,"MAIL_INBOX_UPDATE","MAIL_CLOSED")
 						else
 							--print("not last mail")
 						end
