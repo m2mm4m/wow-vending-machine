@@ -49,7 +49,8 @@ end
 
 function VM:GetItemID(link)
 	if not link then return end
-	if type(link)==number or tonumber(link) or link:find("item:(%d+)") then
+	if type(link)=="table" then return self:Operator("GetItemID",link) end
+	if type(link)=="number" or tonumber(link) or link:find("item:(%d+)") then
 		local reqlink=select(2,GetItemInfo(link))
 		if reqlink then
 			link=reqlink
@@ -93,6 +94,54 @@ function VM:GetNumItemStacks(itemID)
 		end
 	end
 	return stackCount
+end
+
+function VM:Operator(operator,arg1,...)
+	if type(arg1)=="table" then
+		local r={}
+		for index=1,#arg1 do
+			local ret=self:Operator(operator,arg1[index],...)
+			if ret then
+				tinsert(r,ret)
+			end
+		end
+		return r
+	else
+		local status,value
+		if type(operator)=="string" and type(self[operator])=="function" then
+			status,value=pcall(self[operator],self,arg1,...)
+		elseif type(operator)=="function" then
+			status,value=pcall(operator,arg1,...)
+		end
+		if status then return value end
+	end
+end
+
+function VM:sum(t)
+	if not t then return 0 end
+	if type(t)~="table" then return tonumber(t) end
+	local sum=0
+	for index,value in ipairs(t) do
+		local v=tonumber(value)
+		sum=sum+v
+	end
+	return sum
+end
+
+local TableReverseCache=setmetatable({},{__mode="kv"})
+function VM:reverse(t)
+	if type(t)=="nil" then return {} end
+	if TableReverseCache[t] then return TableReverseCache[t] end
+	local r={}
+	if type(t)=="table" then
+		for index,value in pairs(t) do
+			r[value]=index
+		end
+	else
+		r[t]=t
+	end
+	TableReverseCache[t]=r
+	return r
 end
 
 function VM:WaitSteadyValue(minCount,minTime,func,...)

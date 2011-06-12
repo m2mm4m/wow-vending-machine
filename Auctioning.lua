@@ -188,11 +188,11 @@ VM.MailList={
 	[52719]="Millionaires",	--Greater Celestial Essence
 	
 	[52177]="Yalanayika",	--Carnelian
-	[52178]="Yalanayika",	--Zephyrite
-	[52179]="Yalanayika",	--Alicite
-	[52180]="Yalanayika",	--Nightstone
-	[52181]="Yalanayika",	--Hessonite
-	[52182]="Yalanayika",	--Jasper
+	[{	52178,				--Zephyrite
+		52179,				--Alicite
+		52180,				--Nightstone
+		52181,				--Hessonite
+		52182,}]="Yalanayika"	--Jasper
 }
 
 VM:NewProcessor("AutoDE",function(self)
