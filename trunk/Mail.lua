@@ -93,16 +93,16 @@ end
 function VM:MailBulkItem(item,sendTarget)
 	if not (MailFrame and MailFrame:IsShown()) then return end
 	local sendItem=self:GetItemID(item)
-	local itemName,_,_,_,_,_,_,maxStack=GetItemInfo(item)
-	if not sendItem then return end
+	if not sendItem or (type(sendItem)=="table" and #sendItem==0) then return end
+	local itemName=GetItemInfo(type(sendItem)=="table" and sendItem[1] or sendItem)
 	
-	while self:GetNumItemStacks(sendItem)>=12 do
+	while self:sum(self:Operator("GetNumItemStacks",sendItem))>=12 do
 		ClearSendMail()
 		
 		local numpicked=0
 		for bag=0,NUM_BAG_SLOTS do
 			for slot=1,GetContainerNumSlots(bag) do
-				if self:GetItemID(GetContainerItemLink(bag,slot))==sendItem and numpicked<ATTACHMENTS_MAX_SEND and maxStack==select(2,GetContainerItemInfo(bag,slot)) then
+				if self:reverse(sendItem)[self:GetItemID(GetContainerItemLink(bag,slot))] and numpicked<ATTACHMENTS_MAX_SEND and select(8,GetItemInfo(GetContainerItemLink(bag,slot)))==select(2,GetContainerItemInfo(bag,slot)) then
 					PickupContainerItem(bag, slot)
 					ClickSendMailItemButton()
 					numpicked=numpicked+1
@@ -120,7 +120,6 @@ function VM:MailBulkItem(item,sendTarget)
 		end
 		self:SleepFrame(10,0.5)
 	end
-	
 end
 
 function VM:MailTest()
