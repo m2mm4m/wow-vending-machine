@@ -113,9 +113,9 @@ function VM:MailBulkItem(item,sendTarget)
 		SendMail(sendTarget,itemName,"")
 		
 		local _,event=self:WaitEvent(5,"MAIL_FAILED","MAIL_SEND_SUCCESS")
-		if event=="MAIL_FAILED" or event=="MAIL_SEND_SUCCESS" then
+		if event=="MAIL_SEND_SUCCESS" then
 			print("Successfully sent "..itemName)
-		else
+		elseif not event=="MAIL_FAILED" then
 			print("Error sending mail for "..itemName)
 		end
 		self:SleepFrame(10,0.5)
