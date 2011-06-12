@@ -168,21 +168,31 @@ VM.DEList={
 	52985,		--Azshara's Veil
 	-- 52986,		--Heartblossom
 	
+	52185,		--Elementium Ore
+	53038,		--Obsidium Ore
+	
 	52306,		--Jasper Ring
 	52492,		--Carnelian Spikes
 }
 VM.CraftList={
-	-- 61978,		--Blackfallow Ink
+	61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
 }
 VM.MailList={
-	[61979]="Chengguan",	--Ashen Pigment
+	-- [61979]="Chengguan",	--Ashen Pigment
 	-- [61980]="Millionaires",	--Burning Embers
 	[61978]="Tuixin",		--Blackfallow Ink
 	[61981]="Millionaires",	--Inferno Ink
 	[52555]="Millionaires",	--Hypnotic Dust
 	[52718]="Millionaires",	--Lesser Celestial Essence
 	[52719]="Millionaires",	--Greater Celestial Essence
+	
+	[52177]="Yalanayika",	--Carnelian
+	[52178]="Yalanayika",	--Zephyrite
+	[52179]="Yalanayika",	--Alicite
+	[52180]="Yalanayika",	--Nightstone
+	[52181]="Yalanayika",	--Hessonite
+	[52182]="Yalanayika",	--Jasper
 }
 
 VM:NewProcessor("AutoDE",function(self)
