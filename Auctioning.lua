@@ -192,7 +192,15 @@ VM.MailList={
 		52179,				--Alicite
 		52180,				--Nightstone
 		52181,				--Hessonite
-		52182,}]="Yalanayika"	--Jasper
+		52182,				--Jasper
+	}]="Yalanayika"
+	[52190]="Yalanayika"	--Inferno Ruby
+	[{	52191,				--Ocean Sapphire
+		52192,				--Dream Emerald
+		52193,				--Ember Topaz
+		52194,				--Demonseye
+		52195,				--Amberjewel
+	}]="Yalanayika"
 }
 
 VM:NewProcessor("AutoDE",function(self)
