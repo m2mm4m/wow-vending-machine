@@ -72,13 +72,23 @@ function VM:PostAuctions(AHPath,AuctioneerName)
 	local ret=self:OpenAH(AHPath,AuctioneerName)
 	if not ret then print("failed opending AH?") return false end
 	
+	local minorBar,majorBar=TSMMinorStatusBar,TSMMajorStatusBar
+	if not minorBar or not majorBar then return 0 end
+
 	rawset(TSMAuc.db.global,"bInfo","_#A#A#X")
 
 	self:PostScan()
 	self:Sleep(1)
 
 	local haveShown=false
+	local minorStatus,majorStatus,lastUpdate
 	while true do
+		if minorStatus==minorBar:GetValue() and majorStatus==majorBar:GetValue() then
+			if time()-lastUpdate>30 then break end
+		else
+			minorStatus,majorStatus,lastUpdate=minorBar:GetValue(),TSMMajorStatusBar:GetValue(),time()
+		end
+		
 		if (TSMAuc.Manage.donePosting and TSMAuc.Manage.donePosting:IsShown()) or (haveShown and Post.frame and not Post.frame:IsShown()) then break end
 		if Post.frame and Post.frame:IsShown() then haveShown=true end
 		if Post.frame and Post.frame.button:IsEnabled() then
@@ -96,15 +106,25 @@ function VM:PostAuctions(AHPath,AuctioneerName)
 	return true
 end
 
-function VM:CancelAuctions()
+function VM:CancelAuctions(AHPath,AuctioneerName)
 	local ret=self:OpenAH(AHPath,AuctioneerName)
 	if not ret then return 0 end
+	
+	local minorBar,majorBar=TSMMinorStatusBar,TSMMajorStatusBar
+	if not minorBar or not majorBar then return 0 end
 	
 	self:CancelScan()
 	self:Sleep(1)
 	local count=0
 	local haveShown=false
+	local minorStatus,majorStatus,lastUpdate
 	while true do
+		if minorStatus==minorBar:GetValue() and majorStatus==majorBar:GetValue() then
+			if time()-lastUpdate>30 then break end
+		else
+			minorStatus,majorStatus,lastUpdate=minorBar:GetValue(),TSMMajorStatusBar:GetValue(),time()
+		end
+		
 		if (TSMAuc.Manage.doneCanceling and TSMAuc.Manage.doneCanceling:IsShown()) or (haveShown and Cancel.frame and not Cancel.frame:IsShown()) then break end
 		if Post.frame and Post.frame:IsShown() then haveShown=true end
 		if Cancel.frame and Cancel.frame.button:IsEnabled() then
@@ -206,7 +226,7 @@ VM.MailList={
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
 	if not autoDEFrame then
-		print("Cant find auto DE")
+		print("Cant find Enchantrix")
 		return
 	end
 	
