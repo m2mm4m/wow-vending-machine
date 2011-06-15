@@ -58,7 +58,7 @@ TooltipAuto(text,autoFade) {
 
 f10::
 	w_Enabled:=1
-	WindowsID:="WoW-EU-1#"
+	WindowsID:="WoW-"
 	WinGetPos , w_Window_X, w_Window_Y,,, %WindowsID%
 	w_idletickcount:=A_TickCount
 	Loop {
