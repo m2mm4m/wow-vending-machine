@@ -35,9 +35,6 @@ VM.CraftList={
 VM.MailList={
 	-- [61979]="Chengguan",	--Ashen Pigment
 	-- [61980]="Millionaires",	--Burning Embers
-	[43124]="阳宝宝小坏蛋",
-	[43126]="阳宝宝小坏蛋",
-	[{43108,43109}]="阳宝宝小坏蛋",
 	[61978]="Tuixin",		--Blackfallow Ink
 	[61981]="Millionaires",	--Inferno Ink
 	[52555]="Millionaires",	--Hypnotic Dust
@@ -59,6 +56,13 @@ VM.MailList={
 		52195,				--Amberjewel
 	}]="Yalanayika",
 }
+if GetLocale()=="zhCN" then
+	VM.MailList={
+		[43124]="阳宝宝小坏蛋",
+		[43126]="阳宝宝小坏蛋",
+		[{43108,43109}]="阳宝宝小坏蛋",
+	}
+end
 
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
