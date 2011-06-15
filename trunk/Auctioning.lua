@@ -1,4 +1,116 @@
 ﻿local VM=VendingMachine
+
+VM.DEList={
+	22785,		--魔草
+	
+	36904,		--卷丹
+	39970,		--火叶
+	36907,		--塔兰德拉的玫瑰
+	37921,		--Deadnettle 死亡荨麻
+	36903,		--Adder's tongue
+	36905,		--Lichbloom 巫妖花
+	36906,		--Icethorn 冰棘草
+	
+	52988,		--Whiptail
+	52987,		--Twilight Jasmine
+	52983,		--Cinderbloom
+	52984,		--Stormvine
+	52985,		--Azshara's Veil
+	-- 52986,		--Heartblossom
+
+	52185,		--Elementium Ore
+	53038,		--Obsidium Ore
+
+	52306,		--Jasper Ring
+	52310,		--Jasper Ring (Rare)
+	52492,		--Carnelian Spikes
+}
+VM.CraftList={
+	43124,		--虚灵墨水
+	43126,		--海洋墨水
+	61978,		--Blackfallow Ink
+	61981,		--Inferno Ink
+}
+VM.MailList={
+	-- [61979]="Chengguan",	--Ashen Pigment
+	-- [61980]="Millionaires",	--Burning Embers
+	[43124]="阳宝宝小坏蛋",
+	[43126]="阳宝宝小坏蛋",
+	[{43108,43109}]="阳宝宝小坏蛋",
+	[61978]="Tuixin",		--Blackfallow Ink
+	[61981]="Millionaires",	--Inferno Ink
+	[52555]="Millionaires",	--Hypnotic Dust
+	[52718]="Millionaires",	--Lesser Celestial Essence
+	[52719]="Millionaires",	--Greater Celestial Essence
+
+	[52177]="Yalanayika",	--Carnelian
+	[{	52178,				--Zephyrite
+		52179,				--Alicite
+		52180,				--Nightstone
+		52181,				--Hessonite
+		52182,				--Jasper
+	}]="Yalanayika",
+	[52190]="Yalanayika",	--Inferno Ruby
+	[{	52191,				--Ocean Sapphire
+		52192,				--Dream Emerald
+		52193,				--Ember Topaz
+		52194,				--Demonseye
+		52195,				--Amberjewel
+	}]="Yalanayika",
+}
+
+VM:NewProcessor("AutoDE",function(self)
+	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
+	if not autoDEFrame then
+		print("Cant find Enchantrix")
+		return
+	end
+
+	local function isIdle()
+		if LootFrame:IsShown() then return false end
+		if UnitCastingInfo("player") then return false end
+		if GetUnitSpeed("player")~=0 then return false end
+		if IsFalling("player") then return false end
+		if UnitIsDeadOrGhost("player") then return false end
+		return autoDEFrame:IsShown()
+	end
+	local enableAutoSend=self:MsgBox("Do you want to enable AutoSend?","n")
+
+	while true do
+		self:WaitExp(nil,isIdle)
+		self:HardDrive(true,"/click AutoDEPromptYes")
+		self:WaitExp(nil,isIdle)
+		self:SleepFrame(10,0.5)
+
+		if self:IsTradeskillOpen() then
+			for index,item in ipairs(VM.CraftList) do
+				if self:GetCraftingNumAvailable(item)>=80 then
+					self:CraftItem(item)
+				end
+			end
+		end
+
+		if enableAutoSend and MailFrame and MailFrame:IsShown() then
+			for itemID,sendTarget in pairs(VM.MailList) do
+				self:MailBulkItem(itemID,sendTarget)
+			end
+			-- self:SleepFrame(10,0.5)
+		end
+
+		if MailFrame and MailFrame:IsShown() then
+			for index,takeItemID in ipairs(VM.DEList) do
+				self:LootMailItem(takeItemID)
+			end
+			-- self:SleepFrame(10,0.5)
+		end
+	end
+end,
+function (self)
+	self:SetStatus("none")
+end)
+
+-------------------------------------------------------------
+
 local TSMAuc=LibStub and LibStub("AceAddon-3.0") and LibStub("AceAddon-3.0"):GetAddon("TradeSkillMaster_Auctioning",true)
 if not TSMAuc then return end
 local Post = TSMAuc:GetModule("Post")
@@ -178,100 +290,6 @@ function VM:TakeMails(MailPath,MailFacing,View)
 	end
 	return count
 end
-
-VM.DEList={
-	52988,		--Whiptail
-	52987,		--Twilight Jasmine
-	52983,		--Cinderbloom
-	52984,		--Stormvine
-	52985,		--Azshara's Veil
-	-- 52986,		--Heartblossom
-
-	52185,		--Elementium Ore
-	53038,		--Obsidium Ore
-
-	52306,		--Jasper Ring
-	52310,		--Jasper Ring (Rare)
-	52492,		--Carnelian Spikes
-}
-VM.CraftList={
-	61978,		--Blackfallow Ink
-	61981,		--Inferno Ink
-}
-VM.MailList={
-	-- [61979]="Chengguan",	--Ashen Pigment
-	-- [61980]="Millionaires",	--Burning Embers
-	[61978]="Tuixin",		--Blackfallow Ink
-	[61981]="Millionaires",	--Inferno Ink
-	[52555]="Millionaires",	--Hypnotic Dust
-	[52718]="Millionaires",	--Lesser Celestial Essence
-	[52719]="Millionaires",	--Greater Celestial Essence
-
-	[52177]="Yalanayika",	--Carnelian
-	[{	52178,				--Zephyrite
-		52179,				--Alicite
-		52180,				--Nightstone
-		52181,				--Hessonite
-		52182,				--Jasper
-	}]="Yalanayika",
-	[52190]="Yalanayika",	--Inferno Ruby
-	[{	52191,				--Ocean Sapphire
-		52192,				--Dream Emerald
-		52193,				--Ember Topaz
-		52194,				--Demonseye
-		52195,				--Amberjewel
-	}]="Yalanayika",
-}
-
-VM:NewProcessor("AutoDE",function(self)
-	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
-	if not autoDEFrame then
-		print("Cant find Enchantrix")
-		return
-	end
-
-	local function isIdle()
-		if LootFrame:IsShown() then return false end
-		if UnitCastingInfo("player") then return false end
-		if GetUnitSpeed("player")~=0 then return false end
-		if IsFalling("player") then return false end
-		if UnitIsDeadOrGhost("player") then return false end
-		return autoDEFrame:IsShown()
-	end
-	local enableAutoSend=self:MsgBox("Do you want to enable AutoSend?","n")
-
-	while true do
-		self:WaitExp(nil,isIdle)
-		self:HardDrive(true,"/click AutoDEPromptYes")
-		self:WaitExp(nil,isIdle)
-		self:SleepFrame(10,0.5)
-
-		if self:IsTradeskillOpen() then
-			for index,item in ipairs(VM.CraftList) do
-				if self:GetCraftingNumAvailable(item)>=80 then
-					self:CraftItem(item)
-				end
-			end
-		end
-
-		if enableAutoSend and MailFrame and MailFrame:IsShown() then
-			for itemID,sendTarget in pairs(VM.MailList) do
-				self:MailBulkItem(itemID,sendTarget)
-			end
-			-- self:SleepFrame(10,0.5)
-		end
-
-		if MailFrame and MailFrame:IsShown() then
-			for index,takeItemID in ipairs(VM.DEList) do
-				self:LootMailItem(takeItemID)
-			end
-			-- self:SleepFrame(10,0.5)
-		end
-	end
-end,
-function (self)
-	self:SetStatus("none")
-end)
 
 VM:NewProcessor("DalaSell",function (self)
 	local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
