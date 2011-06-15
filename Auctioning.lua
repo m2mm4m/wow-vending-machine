@@ -191,6 +191,7 @@ VM.DEList={
 	53038,		--Obsidium Ore
 
 	52306,		--Jasper Ring
+	52310,		--Jasper Ring (Rare)
 	52492,		--Carnelian Spikes
 }
 VM.CraftList={

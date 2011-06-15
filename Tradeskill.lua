@@ -21,7 +21,7 @@ end
 
 function VM:GetTradeskillRepeatCount(item)
 	local index=GetTradeSkillSelectionIndex()
-	VM:SelectTradeSkill(item)
+	self:SelectTradeSkill(item)
 	local ret=GetTradeskillRepeatCount()
 	SelectTradeSkill(index)
 	return ret
@@ -29,7 +29,7 @@ end
 
 function VM:OpenTradeskill(Tradeskill)
 	self:HardDrive(true,"/cast "..Tradeskill)
-	self:WaitExp(nil,VM.IsTradeskillOpen)
+	self:WaitExp(nil,self.IsTradeskillOpen)
 	self:SleepFrame(10,0.5)
 end
 
@@ -48,7 +48,7 @@ function VM:CraftItem(itemID,numCraft)
 end
 
 function VM:GetCraftingNumAvailable(itemID)
-	if not VM:IsTradeskillOpen() then return 0 end
+	if not self:IsTradeskillOpen() then return 0 end
 	if not itemID then return 0 end
 	
 	for index=1,GetNumTradeSkills() do
@@ -58,6 +58,7 @@ function VM:GetCraftingNumAvailable(itemID)
 			return numAvailable,index
 		end
 	end
+	return 0
 end
 
 function VM:RemoveTradeskillFilters()
