@@ -66,10 +66,7 @@ end
 
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
-	if not autoDEFrame then
-		print("Cant find Enchantrix")
-		return
-	end
+	assert(autoDEFrame,"Cant find Enchantrix")
 
 	local function isIdle()
 		if LootFrame:IsShown() then return false end
@@ -95,14 +92,14 @@ VM:NewProcessor("AutoDE",function(self)
 			end
 		end
 
-		if enableAutoSend and MailFrame and MailFrame:IsShown() then
+		if enableAutoSend and self:IsMailOpen() then
 			for itemID,sendTarget in pairs(VM.MailList) do
 				self:MailBulkItem(itemID,sendTarget)
 			end
 			-- self:SleepFrame(10,0.5)
 		end
 
-		if MailFrame and MailFrame:IsShown() then
+		if self:IsMailOpen() then
 			for index,takeItemID in ipairs(VM.DEList) do
 				self:LootMailItem(takeItemID)
 			end
@@ -123,9 +120,13 @@ local Cancel = TSMAuc:GetModule("Cancel")
 
 local TSMAuc_L = LibStub("AceLocale-3.0"):GetLocale("TradeSkillMaster_Auctioning") -- loads the localization table
 
+function VM:IsAHOpen()
+	return AuctionFrame and AuctionFrame:IsShown()
+end
+
 --Move to AH and open AuctionFrame
 function VM:OpenAH(AHPath,AuctioneerName)
-	if AuctionFrame and AuctionFrame:IsShown() then return true end
+	if self:IsAHOpen() then return true end
 
 	self:MoveRoute(AHPath)
 
@@ -140,7 +141,7 @@ function VM:OpenAH(AHPath,AuctioneerName)
 	end
 
 	self:SetStatus("keypress_vk",0xDE,0)
-	local ret=self:WaitExp(10,function () return AuctionFrame and AuctionFrame:IsShown() end)
+	local ret=self:WaitExp(10,self.IsAHOpen,self)
 	self:SetStatus("none")
 
 	if not ret then print("OpenAH failed opening AH?") return false end
@@ -170,20 +171,6 @@ function VM:CancelScan()
 end
 
 --Go to AH and post items
-local TSMAucDBMeta={__index=function (table,key)
-	print("Attempt to get",key,":",debugstack())
-	if key=="bInfo" then
-		return "_#A#A#X"
-	end
-	return rawget(table,key)
-end,
-__newindex=function (table,key,value)
-	if key=="bInfo" then
-		print("Attempt to set bInfo",debugstack())
-		return
-	end
-	return rawset(table,key,value)
-end,}
 
 function VM:GetTSMStatus()
 	local minorBar,majorBar=TSMMinorStatusBar,TSMMajorStatusBar
@@ -203,7 +190,7 @@ function VM:PostAuctions(AHPath,AuctioneerName)
 	local lastUpdate,prevStatus=time()
 	while true do
 		if prevStatus==self:GetTSMStatus() then
-			if time()-lastUpdate>30 then print(prevStatus,self:GetTSMStatus(),time(),lastUpdate) break end
+			if time()-lastUpdate>60 then print(prevStatus,self:GetTSMStatus(),time(),lastUpdate) break end
 		else
 			lastUpdate,prevStatus=time(),self:GetTSMStatus()
 		end
@@ -220,6 +207,7 @@ function VM:PostAuctions(AHPath,AuctioneerName)
 		-- end
 		self:YieldThread()
 	end
+	TSMAuc.Post:StopPosting()
 	self:SetStatus("none")
 	self:SleepFrame(15,0.5)
 	return true
@@ -236,7 +224,7 @@ function VM:CancelAuctions(AHPath,AuctioneerName)
 	local lastUpdate,prevStatus=time()
 	while true do
 		if prevStatus==self:GetTSMStatus() then
-			if time()-lastUpdate>30 then print(prevStatus,self:GetTSMStatus(),time(),lastUpdate) break end
+			if time()-lastUpdate>60 then print(prevStatus,self:GetTSMStatus(),time(),lastUpdate) break end
 		else
 			lastUpdate,prevStatus=time(),self:GetTSMStatus()
 		end
@@ -252,17 +240,20 @@ function VM:CancelAuctions(AHPath,AuctioneerName)
 		end
 		self:YieldThread()
 	end
+	TSMAuc.Cancel:StopCanceling()
 	self:SetStatus("none")
 	self:SleepFrame(15,0.5)	--Sleep for 15 OnUpdates, with at least 0.5 sec
 	return count
 end
 
 function VM:OpenMail(timeout)
+	if self:IsMailOpen() then return true end
 	local timeout=timeout or 10
 	self:SetStatus("mouseclick",1,0)	--Flag for "mouseclick"
-	local ret=self:WaitExp(timeout,function() return MailFrame and MailFrame:IsShown() end)
+	local ret=self:WaitExp(timeout,self.IsMailOpen,self)
 	if not ret then return false end
 	self:SetStatus("none")
+	self:WaitEvent(5,"MAIL_INBOX_UPDATE")
 
 	self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
 
@@ -277,21 +268,39 @@ function VM:TakeMails(MailPath,MailFacing,View)
 	assert(Postal,"Cannot find Postal")
 	local Postal_OpenAll = Postal:GetModule("OpenAll")
 
-	local count
-	SetView(View)
-	self:MoveRoute(MailPath)
-	self:SetPlayerFacing(MailFacing)
-	SetView(View)
-	if self:OpenMail() then
+	local count=0
+	local mailopen=self:IsMailOpen()
+	if not mailopen then
+		SetView(View)
+		self:MoveRoute(MailPath)
+		self:SetPlayerFacing(MailFacing)
+		SetView(View)
+		mailopen=self:OpenMail()
+	end
+	if mailopen then
+		local startTime=time()
 		print("open mail")
 		Postal_OpenAll:OpenAll()
-
-		self:WaitSteadyValue(nil,nil,function()
-			local cur,total=GetInboxNumItems()
-			count=total-cur
-			if cur==0 then return true end
-			return PostalOpenAllButton:GetText()=="Open All"
-		end)
+		repeat
+			self:WaitSteadyValue(20,1+select(3,GetNetStats())/1000,GetInboxNumItems)
+			self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
+			local numItems,totalItems=GetInboxNumItems()
+			count=totalItems-numItems
+			if totalItems==0 then break end
+			if PostalOpenAllButton:GetText()=="Open All" then
+				print("break")
+				break
+			elseif self:HasMailToLoot() then
+				Postal_OpenAll:OpenAll()
+			end
+		until PostalOpenAllButton:GetText()=="Open All" or time()-startTime>300
+		-- self:WaitSteadyValue(nil,nil,function()
+			-- local cur,total=GetInboxNumItems()
+			-- count=total-cur
+			-- if cur==0 then return true end
+			-- return cur
+			-- return PostalOpenAllButton:GetText()=="Open All"
+		-- end)
 	end
 	return count
 end
@@ -303,7 +312,12 @@ VM:NewProcessor("DalaSell",function (self)
 	local MailFacing=3.8213820457458
 
 	local count=0
+	local prevTakeMail=time()
 	while true do
+		if self:IsMailOpen() or count>0 or time()-prevTakeMail>1200 then
+			count=self:TakeMails(MailPath,MailFacing,1)
+			prevTakeMail=time()
+		end
 		print("posting auctions")
 		self:PostAuctions(AHPath,AuctioneerName)
 		if count<10 then
@@ -311,9 +325,6 @@ VM:NewProcessor("DalaSell",function (self)
 			self:Sleep(1)
 			count=count+self:CancelAuctions(AHPath,AuctioneerName)
 			print("count",count)
-		end
-		if count>0 then
-			count=self:TakeMails(MailPath,MailFacing,1)
 		end
 	end
 end,
