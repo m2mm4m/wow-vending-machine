@@ -1,8 +1,13 @@
 ﻿local VM=VendingMachine
 
+function VM:IsMailOpen()
+	return MailFrame and MailFrame:IsShown()
+end
+
 function VM:CanLootItem(item,quantity)
 	local item=self:GetItemID(item)
 	if not item then return false end
+	if not quantity then return false end
 	local itemFamily=GetItemFamily(item)
 	local maxStack=select(8,GetItemInfo(item))
 	
@@ -22,8 +27,28 @@ function VM:CanLootItem(item,quantity)
 	return false
 end
 
+function VM:HasMailToLoot()
+	if not self:IsMailOpen() then return false end
+	for bag=0,NUM_BAG_SLOTS do
+		local freeSlots,bagType=GetContainerNumFreeSlots(bag)
+		if bagType==0 and freeSlots>0 then return true end
+	end
+	cur,total=GetInboxNumItems()
+	for mailID=1,cur do
+		for attachmentIndex=1,ATTACHMENTS_MAX_SEND do
+			local link=GetInboxItemLink(mailID,attachmentIndex)
+			if self:CanLootItem(link) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function VM:IsLastMail(mailID)
+	if not mailID then return false end
 	local packageIcon,stationeryIcon,sender,subject,money,CODAmount,daysLeft,itemCount,wasRead,wasReturned,textCreated,canReply,isGM,itemQuantity=GetInboxHeaderInfo(mailID)
+	if not sender then return false end
 	local count=0
 	for attachmentIndex=1,ATTACHMENTS_MAX_SEND do
 		local name=GetInboxItem(mailID,attachmentIndex)
@@ -35,6 +60,8 @@ function VM:IsLastMail(mailID)
 end
 
 function VM:LootMailItem(item,quantity,taken)
+	local item=self:GetItemID(item)
+	if not (item and self:IsMailOpen()) then self:YieldThread() return 0 end
 	local totalTaken=taken or 0
 	local current=current or 0
 	for mailID=1,GetInboxNumItems() do
@@ -44,25 +71,12 @@ function VM:LootMailItem(item,quantity,taken)
 			for attachmentIndex=1,(itemCount and ATTACHMENTS_MAX_SEND or 0) do
 				local itemID=self:GetItemID(GetInboxItemLink(mailID,attachmentIndex))
 				if itemID==item then
-					local name,itemTexture,count,quality,canUse = GetInboxItem(mailID,attachmentIndex)
+					--print("|cffff0000mail",mailID," att",attachmentIndex,GetInboxItemLink(mailID,attachmentIndex),count,itemID,item)
+					local name,itemTexture,count,quality,canUse=GetInboxItem(mailID,attachmentIndex)
 					if self:CanLootItem(item,count) then
-						--print("|cffff0000mail",mailID," att",attachmentIndex,GetInboxItemLink(mailID,attachmentIndex),count,itemID,item)
-						TakeInboxItem(mailID,attachmentIndex)
-						
-						local _,event,msg
-						repeat
-							_,event,msg=self:WaitEvent(nil,"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
-						until not (event=="UI_ERROR_MESSAGE" and msg~=INVENTORY_FULL and msg~=ERR_MAIL_DATABASE_ERROR)
-						
-						totalTaken=totalTaken+count
-						if self:IsLastMail(mailID) then
-							--print("|cffffff00-Wait another update")
-							self:WaitEvent(5,"MAIL_INBOX_UPDATE","MAIL_CLOSED")
-						else
-							--print("not last mail")
-						end
-						self:SleepFrame(8,0.3)
-						if quantity and totalTaken>=quantity then
+						totalTaken=totalTaken+self:TakeInboxItem(mailID,attachmentIndex)
+						self:YieldThread()
+						if (quantity and totalTaken>=quantity) or not self:IsMailOpen() then
 							return totalTaken
 						else
 							return self:LootMailItem(item,quantity,totalTaken)
@@ -75,8 +89,33 @@ function VM:LootMailItem(item,quantity,taken)
 	return totalTaken
 end
 
+-- Take an item from inbox if applicable
+-- @return count		count of items taken
+function VM:TakeInboxItem(mailID,attachmentIndex)
+	if not (mailID and attachmentIndex) then return 0 end
+	local name,itemTexture,count,quality,canUse=GetInboxItem(mailID,attachmentIndex)
+	local item=self:GetItemID(GetInboxItemLink(mailID,attachmentIndex))
+	if not (name and count) then return 0 end
+	if self:CanLootItem(item,count) then
+		--print("|cffff0000mail",mailID," att",attachmentIndex,GetInboxItemLink(mailID,attachmentIndex),count,itemID,item)
+		TakeInboxItem(mailID,attachmentIndex)
+		
+		local _,event,msg
+		repeat
+			_,event,msg=self:WaitEvent(nil,"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
+		until not (event=="UI_ERROR_MESSAGE" and msg~=INVENTORY_FULL and msg~=ERR_MAIL_DATABASE_ERROR)
+		
+		if self:IsLastMail(mailID) then
+			self:WaitEvent(1+self:GetLatency("world"),"MAIL_INBOX_UPDATE","MAIL_CLOSED")
+		end
+		self:SleepFrame(8,0.3)
+	end
+	return count
+end
+
 function VM:GetItemCountInMail(itemID)
 	local itemID=self:GetItemID(itemID)
+	if not itemID then return 0 end
 	local count=0
 	for mailID=1,GetInboxNumItems() do
 		for attachmentIndex=1,ATTACHMENTS_MAX_SEND do
@@ -91,9 +130,10 @@ function VM:GetItemCountInMail(itemID)
 end
 
 function VM:MailBulkItem(item,sendTarget)
-	if not (MailFrame and MailFrame:IsShown()) then return end
+	if not self:IsMailOpen() then return end
 	local sendItem=self:GetItemID(item)
 	if not sendItem or (type(sendItem)=="table" and #sendItem==0) then return end
+	if type(sendTarget)~="string" or sendTarget:len()==0 then return end
 	local itemName=GetItemInfo(type(sendItem)=="table" and sendItem[1] or sendItem)
 	
 	while self:sum(self:Operator("GetNumItemStacks",sendItem))>=12 do

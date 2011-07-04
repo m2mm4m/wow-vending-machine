@@ -32,6 +32,14 @@ VM.StatusCode={
 	mousemove_down=59,
 }
 
+function VM:GetLatency(latencyType)
+	if type(latencyType)=="string" and latencyType:lower()=="world" then
+		return select(4,GetNetStats())/1000
+	else
+		return select(3,GetNetStats())/1000
+	end
+end
+
 function VM:GetSafeLink(link)
 	if not link then return end
 	local _,link=GetItemInfo(link)

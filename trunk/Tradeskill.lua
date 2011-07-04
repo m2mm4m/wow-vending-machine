@@ -1,8 +1,9 @@
 ﻿local VM=VendingMachine
 
 function VM:IsTradeskillOpen()
-	if TradeSkillFrame and TradeSkillFrame:IsShown() then
-		return not IsTradeSkillLinked()
+	local tradeskillName,rank,maxLevel=GetTradeSkillLine()
+	if tradeskillName~="UNKNOWN" and not IsTradeSkillLinked() then
+		return tradeskillName,rank,maxLevel
 	end
 end
 
@@ -31,6 +32,7 @@ function VM:OpenTradeskill(Tradeskill)
 	self:HardDrive(true,"/cast "..Tradeskill)
 	self:WaitExp(nil,self.IsTradeskillOpen)
 	self:SleepFrame(10,0.5)
+	if not self:IsTradeskillOpen()==Tradeskill then return self:OpenTradeskill(Tradeskill) end
 end
 
 function VM:CraftItem(itemID,numCraft)
