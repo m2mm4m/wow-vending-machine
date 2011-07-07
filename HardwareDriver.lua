@@ -77,15 +77,57 @@ end
 do return end
 --]]
 --------------------------------------------------------------------
+--[[
+-- An simple example without SecureTemplate:
+local _,ret,status
+repeat
+	ret,status=self:HardDrive(false,myFunc)
+until ret=="HardDrive" and status=="Done" or someExitingCondition
+
+-- An simple example with SecureTemplate
+local _,ret,status
+repeat
+	ret,status=self:HardDrive(true,"/cast mySpell\n/y i wanna yell something")
+until ret=="HardDrive" and status=="Done" or someExitingCondition
+
+-- An example with dynamic SecureTemplate request
+local _,ret,status
+repeat
+	ret,status=self:HardDrive(true,getMyDynamicAction(args))
+until ret=="HardDrive" and status=="Done" or someExitingCondition
+
+-- Another example with dynamic SecureTemplate request, high effiency when complex dynamic action calculating
+local _,ret,status
+repeat
+	if status=="PreClick" then
+		ret,status=self:HardDrive(true,getMyDynamicAction(args))
+	else
+		ret,status=self:HardDrive(true,nil)
+	end
+until ret=="HardDrive" and status=="Done" or someExitingCondition
+ ]]
 local status={}
+-- Internal status for HardDriver (status.status):
+-- idle			the driver is idle and waiting for request
+-- busy			the driver is busy processing another thread, only valid from self:HardDriverStatus()
+-- running		the driver is currently waiting for keypress
+-- preclick		PreClick is triggered, calling back for further instructions
+-- click		PreClick finished setting button. SecureActionButtonTemplate is processing action body	
+
 VM.HardDriveButton:SetScript("PreClick",function (self,button)
 	if InCombatLockdown() then return end
 	if not status.thread then
 		self:SetAttribute("type",nil)
 		return
 	end
-	status.status="post"
-	status.thread:HardResume("HardDrive","Post")
+	if status.status~="running" then return end
+	status.status="preclick"
+	-- Consider that HardResume(...) may not resume thread at correct entry (inside self:HardDrive(...)),
+	-- no data is expected from HardResume(...). If its a correct resume, HardDrive(...) will do that stuff.
+	status.thread:HardResume("HardDrive","PreClick")
+	-- We assume that all lua scripts are processed after each EndScene()
+	-- so that combat lockdown status will not be changed during any resume-yield cycle of a thread.
+	-- Then no need to worry about another InCombatLockdown()
 	status.status="click"
 	if status.isSecure then
 		if type(status.action)=="string" then
@@ -111,7 +153,7 @@ VM.HardDriveButton:SetScript("PostClick",function (self,button)
 		end
 	end
 	if status.thread then
-		status.thread:HardResume("HardDrive","Done")
+		return status.thread:HardResume("HardDrive","Done")
 	end
 end)
 
@@ -127,27 +169,28 @@ function VM:HardDriverStatus()
 	end
 end
 
-function VM:HardDrive(type,...)
-	local isSecure,action=...
+function VM:HardDrive(type,isSecure,action)
 	
-	local status=status.status
-	if status=="busy" then
-		self:YieldThread()
-		return "HardDrive","Waiting"
+	if self:HardDriverStatus()=="busy" or InCombatLockdown() then
+		return "HardDrive","Waiting",self:YieldThread()
 	end
 	status.thread=self
 	status.isSecure=isSecure
 	status.action=action
-	if status.status=="idle" or status.status=="running" then
+	if status.status=="idle" then
 		status.status="running"
+		VM.HardDriveButton:Enable()
+		self:SetStatus("keypress_vk",self.HardDriveKey)
 		local _,_,event,arg1,arg2=self:YieldThread()
+		-- The resume could be by an user HardDrive request, internal PreClick, LibThread AutoResume, or other unknown source
+		self:HardDriveStop()
 		if arg1=="HardDrive" then
 			return arg1,arg2
 		else
-			return "HardDrive","Failed"
+			return "HardDrive","Failed",event
 		end
-	elseif status.status=="post" then
-		self:Yield()
+	elseif status.status=="preclick" then
+		self:YieldThread()
 	end
 	
 end
@@ -156,5 +199,5 @@ function VM:HardDriveStop()
 	status.status="idle"
 	status.thread=nil
 	status.isSecure=nil
-	--status.
+	status.action=nil
 end
