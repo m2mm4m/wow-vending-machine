@@ -7,10 +7,10 @@ VM.DEList={
 	36904,		--卷丹
 	39970,		--火叶
 	36907,		--塔兰德拉的玫瑰
-	37921,		--Deadnettle 死亡荨麻
+	37921,		--Deadnettle
 	36903,		--Adder's tongue
-	36905,		--Lichbloom 巫妖花
-	36906,		--Icethorn 冰棘草
+	36905,		--Lichbloom
+	36906,		--Icethorn
 	
 	52988,		--Whiptail
 	52987,		--Twilight Jasmine
