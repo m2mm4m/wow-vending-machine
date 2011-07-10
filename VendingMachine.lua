@@ -212,7 +212,7 @@ end
 local function ProcessorStop(self)
 	if VM.processors[self.name]==self and self.thread then
 		self.thread:Dispose()
-		self.destructor(self.thread)
+		if self.destructor then pcall(self.destructor,self.thread) end
 		self.thread=nil
 		VM:log(1,("%s stopped"):format(self.name))
 	else
@@ -224,11 +224,11 @@ function VM:NewProcessor(name,constructor,destructor,prio)
 	if not name or not constructor then return end
 	VM.processors=VM.processors or {}
 	local obj={name=name,constructor=constructor,destructor=destructor,prio=prio,Start=ProcessorStart,Stop=ProcessorStop,}
-	VM[name]=obj
+	VM[name]=obj		--Override previous processor if any
 end
 
 function VM:callback(...)
-	print("|cff00ff00callback",...)
+	print("|cff00ff00callback",self,...)
 end
 
 function VM:yieldCallback(ret,...)
@@ -259,8 +259,8 @@ function VM:InputBox(prompt,keylist)
 end
 
 function VM:MsgBox(prompt,map,keylist)
-	local t,_,arg1,arg2={}
-	local function callback(text)
+	local t,_,arg1,arg2={}		--t holds a unique table which is a key identifying the correct resuming call
+	local function callback(text)	--Create a closure that can resume the thread with t
 		self:HardResume(t,text)
 	end
 	IGAS:MsgBox(prompt,map,callback,keylist)
