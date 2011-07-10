@@ -111,6 +111,10 @@ function (self)
 	self:SetStatus("none")
 end)
 
+VM:NewProcessor("Remail",function (self)
+	
+end)
+
 -------------------------------------------------------------
 
 local TSMAuc=LibStub and LibStub("AceAddon-3.0") and LibStub("AceAddon-3.0"):GetAddon("TradeSkillMaster_Auctioning",true)
@@ -200,6 +204,7 @@ function VM:PostAuctions(AHPath,AuctioneerName)
 		if Post.frame and Post.frame.button:IsEnabled() then
 			self:HardDrive(true,"/click TSMAucPostButton")
 		end
+		
 		-- if Post.frame and Post.frame.button:IsEnabled() then
 			-- self:SetStatus("keypress_vk",0x78,0)
 		-- else
@@ -263,11 +268,6 @@ function VM:OpenMail(timeout)
 end
 
 function VM:TakeMails(MailPath,MailFacing,View)
-	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
-	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
-	assert(Postal,"Cannot find Postal")
-	local Postal_OpenAll = Postal:GetModule("OpenAll")
-
 	local count=0
 	local mailopen=self:IsMailOpen()
 	if not mailopen then
@@ -278,22 +278,8 @@ function VM:TakeMails(MailPath,MailFacing,View)
 		mailopen=self:OpenMail()
 	end
 	if mailopen then
-		local startTime=time()
 		print("open mail")
-		Postal_OpenAll:OpenAll()
-		repeat
-			self:WaitSteadyValue(20,1+select(3,GetNetStats())/1000,GetInboxNumItems)
-			self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
-			local numItems,totalItems=GetInboxNumItems()
-			count=totalItems-numItems
-			if totalItems==0 then break end
-			if PostalOpenAllButton:GetText()=="Open All" then
-				print("break")
-				break
-			elseif self:HasMailToLoot() then
-				Postal_OpenAll:OpenAll()
-			end
-		until PostalOpenAllButton:GetText()=="Open All" or time()-startTime>300
+		count=self:PostalOpenAll()
 		-- self:WaitSteadyValue(nil,nil,function()
 			-- local cur,total=GetInboxNumItems()
 			-- count=total-cur
@@ -305,8 +291,34 @@ function VM:TakeMails(MailPath,MailFacing,View)
 	return count
 end
 
+function VM:PostalOpenAll()
+	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
+	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
+	assert(Postal,"Cannot find Postal")
+	local Postal_OpenAll = Postal:GetModule("OpenAll")
+	
+	local startTime=time()
+	local count=0
+	Postal_OpenAll:OpenAll()
+	repeat
+		self:WaitSteadyValue(20,1+select(3,GetNetStats())/1000,GetInboxNumItems)
+		self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
+		local numItems,totalItems=GetInboxNumItems()
+		count=totalItems-numItems
+		if totalItems==0 then break end
+		if PostalOpenAllButton:GetText()=="Open All" then
+			print("break")
+			break
+		elseif self:HasMailToLoot() then
+			Postal_OpenAll:OpenAll()
+		end
+	until PostalOpenAllButton:GetText()=="Open All" or time()-startTime>300
+	return count
+end
+
 VM:NewProcessor("DalaSell",function (self)
-	local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
+	-- local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
+	local AHPath={{0.39034032821655,0.27777343988419,2},{0.38976144790649,0.2540397644043}}
 	local AuctioneerName="Brassbolt Mechawrench"
 	local MailPath={{0.39080762863159, 0.2708243727684,2},{0.40370684862137, 0.32425612211227,0.5}}
 	local MailFacing=3.8213820457458
