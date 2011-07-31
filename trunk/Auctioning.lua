@@ -1,23 +1,23 @@
 ﻿local VM=VendingMachine
 
 VM.DEList={
-	22785,		--魔草
-	22793,		--法力蓟
+	-- 22785,		--魔草
+	-- 22793,		--法力蓟
 	
-	36904,		--卷丹
-	39970,		--火叶
-	36907,		--塔兰德拉的玫瑰
-	37921,		--Deadnettle
-	36903,		--Adder's tongue
-	36905,		--Lichbloom
-	36906,		--Icethorn
+	-- 36904,		--卷丹
+	-- 39970,		--火叶
+	-- 36907,		--塔兰德拉的玫瑰
+	-- 37921,		--Deadnettle
+	-- 36903,		--Adder's tongue
+	-- 36905,		--Lichbloom
+	-- 36906,		--Icethorn
 	
 	52988,		--Whiptail
 	52987,		--Twilight Jasmine
 	52983,		--Cinderbloom
 	52984,		--Stormvine
 	52985,		--Azshara's Veil
-	-- 52986,		--Heartblossom
+	52986,		--Heartblossom
 
 	52185,		--Elementium Ore
 	53038,		--Obsidium Ore
@@ -32,42 +32,49 @@ VM.CraftList={
 	61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
 }
-VM.MailList={
-	-- [61979]="Chengguan",	--Ashen Pigment
-	-- [61980]="Millionaires",	--Burning Embers
-	[61978]="Tuixin",		--Blackfallow Ink
-	[61981]="Millionaires",	--Inferno Ink
-	[52555]="Millionaires",	--Hypnotic Dust
-	[52718]="Millionaires",	--Lesser Celestial Essence
-	[52719]="Millionaires",	--Greater Celestial Essence
-
-	[52177]="Yalanayika",	--Carnelian
-	[{	52178,				--Zephyrite
-		52179,				--Alicite
-		52180,				--Nightstone
-		52181,				--Hessonite
-		52182,				--Jasper
-	}]="Yalanayika",
-	[52190]="Yalanayika",	--Inferno Ruby
-	[{	52191,				--Ocean Sapphire
-		52192,				--Dream Emerald
-		52193,				--Ember Topaz
-		52194,				--Demonseye
-		52195,				--Amberjewel
-	}]="Yalanayika",
-}
-if GetLocale()=="zhCN" then
+if UnitName("player")=="\195\141\195\172" then
 	VM.MailList={
-		[43124]="阳宝宝小坏蛋",
-		[43126]="阳宝宝小坏蛋",
-		[{43108,43109}]="阳宝宝小坏蛋",
+		[61978]="歆颜尐美",		--Blackfallow Ink
+		[61981]="歆颜尐美",	--Inferno Ink
+	}
+else
+	VM.MailList={
+		-- [61979]="Chengguan",	--Ashen Pigment
+		-- [61980]="Millionaires",	--Burning Embers
+		[61978]="Tuixin",		--Blackfallow Ink
+		[61981]="Millionaires",	--Inferno Ink
+		[52555]="Millionaires",	--Hypnotic Dust
+		[52718]="Millionaires",	--Lesser Celestial Essence
+		[52719]="Millionaires",	--Greater Celestial Essence
+
+		[52177]="Yalanayika",	--Carnelian
+		[{	52178,				--Zephyrite
+			52179,				--Alicite
+			52180,				--Nightstone
+			52181,				--Hessonite
+			52182,				--Jasper
+		}]="Yalanayika",
+		[52190]="Yalanayika",	--Inferno Ruby
+		[{	52191,				--Ocean Sapphire
+			52192,				--Dream Emerald
+			52193,				--Ember Topaz
+			52194,				--Demonseye
+			52195,				--Amberjewel
+		}]="Yalanayika",
 	}
 end
+-- if GetLocale()=="zhCN" then
+	-- VM.MailList={
+		-- [43124]="阳宝宝小坏蛋",
+		-- [43126]="阳宝宝小坏蛋",
+		-- [{43108,43109}]="阳宝宝小坏蛋",
+	-- }
+-- end
 
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
 	assert(autoDEFrame,"Cant find Enchantrix")
-
+	
 	local function isIdle()
 		if LootFrame:IsShown() then return false end
 		if UnitCastingInfo("player") then return false end
@@ -77,7 +84,7 @@ VM:NewProcessor("AutoDE",function(self)
 		return autoDEFrame:IsShown()
 	end
 	local enableAutoSend=self:MsgBox("Do you want to enable AutoSend?","n")
-
+	
 	while true do
 		self:WaitExp(nil,isIdle)
 		self:HardDrive(true,"/click AutoDEPromptYes")
@@ -112,7 +119,13 @@ function (self)
 end)
 
 VM:NewProcessor("Remail",function (self)
-	
+	while true do
+		self:PostalOpenAll()
+		self:YieldThread()
+		for itemID,sendTarget in pairs(VM.MailList) do
+			self:MailBulkItem(itemID,sendTarget)
+		end
+	end
 end)
 
 -------------------------------------------------------------
