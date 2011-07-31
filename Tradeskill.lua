@@ -28,13 +28,19 @@ function VM:GetTradeskillRepeatCount(item)
 	return ret
 end
 
-function VM:OpenTradeskill(Tradeskill)
+function VM:OpenTradeskill(Tradeskill,retry)
+	local retry=retry or 0
+	if retry>5 then return false end
 	self:HardDrive(true,"/cast "..Tradeskill)
 	self:WaitExp(nil,self.IsTradeskillOpen)
 	self:SleepFrame(10,0.5)
-	if not self:IsTradeskillOpen()==Tradeskill then return self:OpenTradeskill(Tradeskill) end
+	if not self:IsTradeskillOpen()==Tradeskill then
+		return self:OpenTradeskill(Tradeskill,retry+1)
+	end
+	return true
 end
 
+--TODO: return the actual number of item crafted
 function VM:CraftItem(itemID,numCraft)
 	local numAvailable,index=self:GetCraftingNumAvailable(itemID)
 	if not numAvailable then return 0 end
