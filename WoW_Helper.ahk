@@ -87,7 +87,7 @@ DetectWoW() {
 			if IsWoWWindow(t_WindowsID%A_Index%) {
 				WindowsID:=WindowsID+1
 				this:={}
-				this.index:=1
+				this.index:=WindowsID
 				this.id:=t_WindowsID%A_Index%
 				this.ahkid:="ahk_id" . this.id
 				this.title:=alias . "-" . A_Index . "#"
