@@ -12,6 +12,8 @@ VM.DEList={
 	-- 36905,		--Lichbloom
 	-- 36906,		--Icethorn
 	
+	61979,		--Ashen Pigment
+	
 	52988,		--Whiptail
 	52987,		--Twilight Jasmine
 	52983,		--Cinderbloom
@@ -27,8 +29,8 @@ VM.DEList={
 	52492,		--Carnelian Spikes
 }
 VM.CraftList={
-	43124,		--虚灵墨水
-	43126,		--海洋墨水
+	43124,		--Ethereal Ink
+	43126,		--Ink of the Sea
 	61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
 }
@@ -333,6 +335,7 @@ VM:NewProcessor("DalaSell",function (self)
 	-- local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
 	local AHPath={{0.39034032821655,0.27777343988419,2},{0.38976144790649,0.2540397644043}}
 	local AuctioneerName="Brassbolt Mechawrench"
+	if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
 	local MailPath={{0.39080762863159, 0.2708243727684,2},{0.40370684862137, 0.32425612211227,0.5}}
 	local MailFacing=3.8213820457458
 
