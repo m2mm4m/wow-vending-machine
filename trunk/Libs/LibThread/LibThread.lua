@@ -68,7 +68,7 @@ end
 function private.dispatchNext()
 	for index,thread in ipairs(threads) do
 		local p=p(thread)
-		if not (p.yieldThread or p.suspended) and thread:Status()=="suspended" then
+		if not (p.yieldThread or p.suspended) and thread:IsSuspended() then
 			if p.sleep then
 				local timeElapsed=GetTime()-p.sleep
 				if p.sleepTime and timeElapsed>=p.sleepTime then
@@ -111,7 +111,7 @@ function control:error(message,level)	--Generate an error for a thread if it's n
 end
 
 function control:Yield(...)
-	if not self:Status()=="running" then return self:error("Cannot yield a coroutine outside it",2) end
+	if not self:IsRunning() then return self:error("Cannot yield a coroutine outside it",2) end
 	return yield(...)
 end
 
@@ -147,7 +147,7 @@ function control:Sleep(delay,...)
 end
 
 function control:WaitEvent(TimeOut,...)
-	if not self:Status()=="running" then return self:error("WaitEvent can only be called in a running thread",2) end
+	if not self:IsRunning() then return self:error("WaitEvent can only be called in a running thread",2) end
 	
 	local eventList=p(self).eventList
 	local ValidEvent
@@ -216,20 +216,28 @@ function control:Status()
 	return status(p(self).coroutine)
 end
 
+function control:IsRunning()
+	return self:Status()=="running"
+end
+
+function control:IsSuspended()
+	return self:Status()=="suspended"
+end
+
 function control:Suspend(...)	--Suspend a thread and wait for resuming
 	p(self).suspended=true
-	if self:Status()=="running" then return self:Yield(...) end
+	if self:IsRunning() then return self:Yield(...) end
 end
 
 function control:Resume()	--Resume a thread on next dispatch duty
-	if self:Status()=="suspended" then
+	if self:IsSuspended() then
 		p(self).suspended=nil
 		self:UnregisterAllEvents()
 	end
 end
 
 function control:HardResume(...)
-	if not self:Status()=="suspended" then return self:error(("Cant resume a %s thread"):format(self:Status()),2) end
+	if not self:IsSuspended() then return self:error(("Cant resume a %s thread"):format(self:Status()),2) end
 	if p(self).disposed then return self:error("Cant resume a disposed thread") end
 	p(self).suspended=nil
 	self:UnregisterAllEvents()
@@ -240,7 +248,7 @@ function control:Dispose(...)
 	self:UnregisterAllEvents()
 	p(self).disposed=true
 	p(self).suspended=true	--To simplify AutoYield logic, also put flag on 'suspended'.
-	if self:Status()=="running" then return self:Yield(...) end	--This function may be called inside coroutine itself
+	if self:IsRunning() then return self:Yield(...) end	--This function may be called inside coroutine itself
 end
 
 function control:SetPriority(prio)
