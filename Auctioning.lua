@@ -16,6 +16,7 @@ VM.DEList={
 	52306,		--Jasper Ring
 	52310,		--Jasper Ring (Rare)
 	52492,		--Carnelian Spikes
+	52329,		--Life
 }
 VM.CraftList={
 	43124,		--Ethereal Ink
@@ -23,9 +24,10 @@ VM.CraftList={
 	61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
 }
-if UnitName("player")=="\195\141\195\172" then
+if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" then
 	VM.MailList={
 		[61978]="歆颜尐美",		--Blackfallow Ink
+		-- [61979]="歆颜尐美",		--Ashen Pigment
 		[61981]="歆颜尐美",	--Inferno Ink
 	}
 else
