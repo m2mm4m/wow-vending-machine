@@ -1,17 +1,6 @@
 ﻿local VM=VendingMachine
 
 VM.DEList={
-	-- 22785,		--魔草
-	-- 22793,		--法力蓟
-	
-	-- 36904,		--卷丹
-	-- 39970,		--火叶
-	-- 36907,		--塔兰德拉的玫瑰
-	-- 37921,		--Deadnettle
-	-- 36903,		--Adder's tongue
-	-- 36905,		--Lichbloom
-	-- 36906,		--Icethorn
-	
 	61979,		--Ashen Pigment
 	
 	52988,		--Whiptail
@@ -65,13 +54,6 @@ else
 		}]="Yalanayika",
 	}
 end
--- if GetLocale()=="zhCN" then
-	-- VM.MailList={
-		-- [43124]="阳宝宝小坏蛋",
-		-- [43126]="阳宝宝小坏蛋",
-		-- [{43108,43109}]="阳宝宝小坏蛋",
-	-- }
--- end
 
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
@@ -121,10 +103,23 @@ function (self)
 end)
 
 VM:NewProcessor("Remail",function (self)
+	local mailList={
+		[52988]="Tellaurea",
+		[52987]="Tellaurea",
+		[52983]="Tellaurea",
+		[52984]="Tellaurea",
+		[52985]="Tellaurea",
+		[52986]="Tellaurea",
+	}
+	if UnitName("player")=="Paupers" then
+		for key,value in pairs(mailList) do mailList[key]="Chengguan" end
+	end
+	-- print("Remail...")
 	while true do
-		self:PostalOpenAll()
+		-- print("PostalOpenAll:",self.externalLib,VM.PostalOpenAll)
+		print(self:PostalOpenAll(),"taken")
 		self:YieldThread()
-		for itemID,sendTarget in pairs(VM.MailList) do
+		for itemID,sendTarget in pairs(mailList) do
 			self:MailBulkItem(itemID,sendTarget)
 		end
 	end
