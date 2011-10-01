@@ -102,7 +102,7 @@ function VM:TakeInboxItem(mailID,attachmentIndex)
 		
 		local _,event,msg
 		repeat
-			_,event,msg=self:WaitEvent(nil,"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
+			_,event,msg=self:WaitEvent(2+2*self:GetLatency("world"),"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
 		until not (event=="UI_ERROR_MESSAGE" and msg~=INVENTORY_FULL and msg~=ERR_MAIL_DATABASE_ERROR)
 		
 		if self:IsLastMail(mailID) then
