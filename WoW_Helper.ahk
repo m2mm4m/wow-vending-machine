@@ -22,13 +22,11 @@ SetGlobal() {
 	DefaultInterval:=5000
 	
 	; Hotkey config
-	Hotkeys:={}
-	Hotkeys[1]:={key:"f12",		label:"ToggleTimer",	keyStr:"F12",		desc:"Toggle Timer"			}
-	Hotkeys[2]:={key:"!f12",	label:"DetectWindows",	keyStr:"a-F12",		desc:"Scan for Clients"		}
-	Hotkeys[3]:={key:"^f12",	label:"OpenConfig",		keyStr:"c-F12",		desc:"Open Config"			}
-	Hotkeys[4]:={key:"!^f12",	label:"ToggleHide",		keyStr:"c-a-F12",	desc:"Hide/Show Clients"	}
-	Hotkeys[5]:={key:"!^+f12",	label:"ReloadScript",	keyStr:"c-a-s-F12",	desc:"Reload Script"		}
-	
+	Hotkeys:=[	 {key:"f12",	label:"ToggleTimer",	keyStr:"F12",		desc:"Toggle Timer"			}
+				,{key:"!f12",	label:"DetectWindows",	keyStr:"a-F12",		desc:"Scan for Clients"		}
+				,{key:"^f12",	label:"OpenConfig",		keyStr:"c-F12",		desc:"Open Config"			}
+				,{key:"!^f12",	label:"ToggleHide",		keyStr:"c-a-F12",	desc:"Hide/Show Clients"	}
+				,{key:"!^+f12",	label:"ReloadScript",	keyStr:"c-a-s-F12",	desc:"Reload Script"		}	]
 	; Initialize global strings
 	w_Enabled:=0
 	w_HideAll:=0
