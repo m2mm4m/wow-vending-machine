@@ -305,7 +305,8 @@ end
 
 function VM:PostalOpenAll()
 	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
-	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
+	local Postal=LibStub("AceAddon-3.0"):GetAddon("Postal",true)
+	local PostalL=LibStub("AceLocale-3.0"):GetLocale("Postal")
 	assert(Postal,"Cannot find Postal")
 	local Postal_OpenAll = Postal:GetModule("OpenAll")
 	
@@ -318,13 +319,13 @@ function VM:PostalOpenAll()
 		local numItems,totalItems=GetInboxNumItems()
 		count=totalItems-numItems
 		if totalItems==0 then break end
-		if PostalOpenAllButton:GetText()=="Open All" then
+		if PostalOpenAllButton:GetText()==PostalL["Open All"] then
 			print("break")
 			break
 		elseif self:HasMailToLoot() then
 			Postal_OpenAll:OpenAll()
 		end
-	until PostalOpenAllButton:GetText()=="Open All" or time()-startTime>300
+	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>300
 	return count
 end
 
