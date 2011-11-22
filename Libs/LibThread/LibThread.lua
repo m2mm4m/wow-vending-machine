@@ -25,7 +25,8 @@ local print=function(...)  end
 --Get property table for a thread
 local function p(thread)
 	if type(thread)~="table" then return {} end
-	return getmetatable(thread).___LibThread or {}
+	local meta=getmetatable(thread)
+	return meta and meta.___LibThread or {}
 end
 
 function private.OnUpdate(self,elapsed)
