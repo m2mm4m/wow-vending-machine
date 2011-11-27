@@ -9,6 +9,26 @@ local function sgn(n)
 	return n>=0 and 1 or -1 
 end
 
+function VM:WaitStartMoving()
+	local px,py
+	local cx,cy=GetPlayerMapPosition("player")
+	repeat
+		self:YieldThread()
+		px,py=cx,cy
+		cx,cy=GetPlayerMapPosition("player")
+	until cx~=px or cy~=py
+end
+
+function VM:WaitStopMoving()
+	local px,py
+	local cx,cy=GetPlayerMapPosition("player")
+	repeat
+		self:YieldThread()
+		px,py=cx,cy
+		cx,cy=GetPlayerMapPosition("player")
+	until cx==px and cy==py
+end
+
 function VM:SendKeyDuration(ttm,vk)
 	local ttm_ms=ttm*1000
 	if ttm_ms<20 then
@@ -29,6 +49,17 @@ function VM:SendKeyDuration(ttm,vk)
 	return true
 end
 
+function VM:CalcPlayerFacing(direction)
+	local speed=3.14
+	local current=GetPlayerFacing()
+	if current>direction then current=current-pi*2 end
+	if direction-current<=pi then	--turn left
+		return 0x25,(direction-current)/speed
+	else
+		return 0x27,(2*pi-direction+current)/speed
+	end
+end
+
 function VM:SetPlayerFacing(direction,tolerance)
 	local speed=3.14
 	local tolerance=tolerance or 0.01
@@ -39,7 +70,6 @@ function VM:SetPlayerFacing(direction,tolerance)
 	for index=1,10 do
 		if (direction-current)/2/pi<tolerance or 1+(current-direction)/2/pi<tolerance then break end
 		--print("new cycle started at",current)
-		local ttm,vk
 		if direction-current<=pi then	--turn left
 			if not self:SendKeyDuration((direction-current)/speed,0x25) then break end
 		else
@@ -108,6 +138,13 @@ function VM:MoveToPos(x,y,tolerance)
 	return GetPlayerMapPosition("player")
 end
 
+-- function VM:MoveToPos(x,y,tolerance)
+	-- local tolerance=tolerance or self.charMoveTolerance or 1
+	-- repeat
+		
+	-- until dist<=tolerance
+-- end
+
 function VM:CalcDistance(fromX,fromY,toX,toY,map,floor)
 	if not (map and floor) then map,floor=self:GetPlayerPos() end
 	return Astrolabe:ComputeDistance(map,floor,fromX,fromY,map,floor,toX,toY)
@@ -161,9 +198,11 @@ VM:NewProcessor("NPCScan",function(self)
 	}
 	
 	while true do
+		local startTime=time()
 		for index,node in ipairs(route) do
 			self:MoveToPos(unpack(node))
 		end
+		print("NPCScan route finished in",time()-startTime,"s")
 		self:YieldThread()
 	end
 end,function (self) self:SetStatus("none") end)
