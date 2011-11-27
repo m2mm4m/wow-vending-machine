@@ -106,15 +106,17 @@ end)
 
 VM:NewProcessor("Remail",function (self)
 	local mailList={
-		[52988]="Tellaurea",
-		[52987]="Tellaurea",
-		[52983]="Tellaurea",
-		[52984]="Tellaurea",
-		[52985]="Tellaurea",
-		[52986]="Tellaurea",
+		[52988]=true,
+		[52987]=true,
+		[52983]=true,
+		[52984]=true,
+		[52985]=true,
+		[52986]=true,
 	}
 	if UnitName("player")=="Paupers" then
 		for key,value in pairs(mailList) do mailList[key]="Chengguan" end
+	elseif UnitName("player")=="Chengguan" then
+		for key,value in pairs(mailList) do mailList[key]="Pikkachu" end
 	end
 	-- print("Remail...")
 	while true do
@@ -305,8 +307,7 @@ end
 
 function VM:PostalOpenAll()
 	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
-	local Postal=LibStub("AceAddon-3.0"):GetAddon("Postal",true)
-	local PostalL=LibStub("AceLocale-3.0"):GetLocale("Postal")
+	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
 	assert(Postal,"Cannot find Postal")
 	local Postal_OpenAll = Postal:GetModule("OpenAll")
 	
@@ -319,22 +320,22 @@ function VM:PostalOpenAll()
 		local numItems,totalItems=GetInboxNumItems()
 		count=totalItems-numItems
 		if totalItems==0 then break end
-		if PostalOpenAllButton:GetText()==PostalL["Open All"] then
+		if PostalOpenAllButton:GetText()=="Open All" then
 			print("break")
 			break
 		elseif self:HasMailToLoot() then
 			Postal_OpenAll:OpenAll()
 		end
-	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>300
+	until PostalOpenAllButton:GetText()=="Open All" or time()-startTime>300
 	return count
 end
 
 VM:NewProcessor("DalaSell",function (self)
 	-- local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
-	local AHPath={{0.39034032821655,0.27777343988419,2},{0.38976144790649,0.2540397644043}}
+	local AHPath={{0.39034032821655,0.27777343988419},{0.38976144790649,0.2540397644043}}
 	local AuctioneerName="Brassbolt Mechawrench"
 	if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
-	local MailPath={{0.39080762863159, 0.2708243727684,2},{0.40370684862137, 0.32425612211227,0.5}}
+	local MailPath={{0.39074057340622, 0.2659507393837},{0.39034032821655,0.27777343988419},{0.40370684862137, 0.32425612211227,0.5}}
 	local MailFacing=3.8213820457458
 
 	local count=0

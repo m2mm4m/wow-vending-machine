@@ -199,7 +199,8 @@ function VM:NewThread(func,prio)
 	return thread
 end
 
-local function ProcessorStart(self)
+local ProcessorPrototype={}
+function ProcessorPrototype:Start()
 	if self.thread then
 		VM:log(1,("%s already exists"):format(self.name))
 	else
@@ -209,7 +210,7 @@ local function ProcessorStart(self)
 	end
 end
 
-local function ProcessorStop(self)
+function ProcessorPrototype:Stop()
 	if VM.processors[self.name]==self and self.thread then
 		self.thread:Dispose()
 		if self.destructor then pcall(self.destructor,self.thread) end
@@ -220,10 +221,21 @@ local function ProcessorStop(self)
 	end
 end
 
+function ProcessorPrototype:Toggle()
+	if self.thread then
+		self:Stop()
+	else
+		self:Start()
+	end
+end
+
 function VM:NewProcessor(name,constructor,destructor,prio)
 	if not name or not constructor then return end
 	VM.processors=VM.processors or {}
-	local obj={name=name,constructor=constructor,destructor=destructor,prio=prio,Start=ProcessorStart,Stop=ProcessorStop,}
+	local obj={name=name,constructor=constructor,destructor=destructor,prio=prio,}
+	for key,value in pairs(ProcessorPrototype) do
+		obj[key]=value
+	end
 	VM[name]=obj		--Override previous processor if any
 end
 
