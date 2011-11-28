@@ -162,6 +162,21 @@ function VM:MailBulkItem(item,sendTarget)
 	end
 end
 
+function VM:DeleteInboxItem(mailID)
+	if not mailID then return end
+	
+	DeleteInboxItem(mailID)
+	
+	local _,event,msg
+	repeat
+		_,event,msg=self:WaitEvent(2+2*self:GetLatency("world"),"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
+	until not (event=="UI_ERROR_MESSAGE" and msg~=ERR_MAIL_DATABASE_ERROR and msg~=ERR_MAIL_DELETE_ITEM_ERROR)
+end
+
+-- function VM:TakeMails(filter)
+	
+-- end
+
 function VM:MailTest()
 	VM:NewThread(function(self)
 		self:MailBulkItem(61979,"Chengguan")
