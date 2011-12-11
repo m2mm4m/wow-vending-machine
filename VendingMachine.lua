@@ -32,6 +32,29 @@ VM.StatusCode={
 	mousemove_down=59,
 }
 
+VM.Modules={}
+VM.__ModuleMeta={
+	__index=function (table,key)
+		return rawget(table,key) or rawget(VM,key)
+	end,
+}
+VM.__MainMeta={
+	__index=function (table,key)
+		local value=rawget(table,key)
+		if type(value)=="nil" then
+			
+		end
+	end,
+}
+
+function VM:NewModule(name,module)
+	if type(name)~="string" then return end
+	local module=module or {}
+	setmetatable(module,VM.__ModuleMeta)
+	VM.Modules[name]=module
+	return module
+end
+
 function VM:GetLatency(latencyType)
 	if type(latencyType)=="string" and latencyType:lower()=="world" then
 		return select(4,GetNetStats())/1000
@@ -229,13 +252,30 @@ function ProcessorPrototype:Toggle()
 	end
 end
 
+function ProcessorPrototype:SetAutoRun(autorun)
+	local db=VM.db
+	if not db then print("Can't find VMDB") return end
+	db.AutoRunProcessor=db.AutoRunProcessor or {}
+	if autorun then
+		db.AutoRunProcessor[self.name]=true
+	else
+		db.AutoRunProcessor[self.name]=nil
+	end
+end
+
+function ProcessorPrototype:__meta_call(...)
+	local func=self.__call or self.Toggle
+	return func(self,...)
+end
+
 function VM:NewProcessor(name,constructor,destructor,prio)
 	if not name or not constructor then return end
 	VM.processors=VM.processors or {}
-	local obj={name=name,constructor=constructor,destructor=destructor,prio=prio,}
+	local obj=setmetatable({name=name,constructor=constructor,destructor=destructor,prio=prio,},{__call=ProcessorPrototype.__meta_call,})
 	for key,value in pairs(ProcessorPrototype) do
 		obj[key]=value
 	end
+	VM.processors[name]=obj
 	VM[name]=obj		--Override previous processor if any
 end
 
@@ -298,5 +338,11 @@ VM.Init=VM:NewThread(function (self)
 	VM.db=VendingMachineDB
 	VM.db.StatusEnabled=true
 	self:SetStatus("none")
+	
+	for name in pairs(VM.db.AutoRunProcessor or {}) do
+		if VM.processors[name] then
+			VM.processors[name]:Start()
+		end
+	end
 end)
 VM.Init:HardResume()

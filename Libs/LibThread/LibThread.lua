@@ -106,7 +106,7 @@ end
 
 function control:error(message,level)	--Generate an error for a thread if it's not in silent mode, and return THREAD_ERROR token
 	local message=("%s: %s"):format(_GlobalName,message or "unknown error")
-	local level=level or 1
+	local level=tonumber(level) or 1
 	if not p(self).silent then error(message,level+1) end
 	return self,"THREAD_ERROR",message
 end
@@ -217,6 +217,10 @@ function control:Status()
 	return status(p(self).coroutine)
 end
 
+function control:IsDead()
+	return self:Status()=="dead" or p(self).disposed
+end
+
 function control:IsRunning()
 	return self:Status()=="running"
 end
@@ -239,7 +243,7 @@ end
 
 function control:HardResume(...)
 	if not self:IsSuspended() then return self:error(("Cant resume a %s thread"):format(self:Status()),2) end
-	if p(self).disposed then return self:error("Cant resume a disposed thread") end
+	if self:IsDead() then return self:error("Cant resume a dead thread") end
 	p(self).suspended=nil
 	self:UnregisterAllEvents()
 	lib:DispatchThread(self,"THREAD_HARDRESUME",...)
@@ -302,15 +306,15 @@ function lib:DispatchThread(thread,...)
 	p.sliceStart=GetTime()
 	p.sliceElapsed=0
 	private.running=thread
-	if type(p.yieldCallback)=="function" then
-		pcall(p.yieldCallback,thread,resume(p.coroutine,thread,...))
+	if type(thread.yieldCallback)=="function" then
+		pcall(thread.yieldCallback,thread,resume(p.coroutine,thread,...))
 	else
 		resume(p.coroutine,thread,...)	--Return value has been ignored if there's no yieldCallback
 	end
 	if lib.timeAvail then lib.timeAvail=lib.timeAvail-(GetTime()-p.sliceStart) end
 	private.running=nil
 	if thread:Status()=="dead" or p.disposed then	--Cleanup for dead or disposed thread
-		if type(p.callback)=="function" then pcall(p.callback,thread) end
+		if type(thread.callback)=="function" then pcall(thread.callback,thread) end
 		thread:UnregisterAllEvents()
 		private.tableRemove(threads,thread)
 	end
