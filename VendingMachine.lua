@@ -32,28 +32,28 @@ VM.StatusCode={
 	mousemove_down=59,
 }
 
-VM.Modules={}
-VM.__ModuleMeta={
-	__index=function (table,key)
-		return rawget(table,key) or rawget(VM,key)
-	end,
-}
-VM.__MainMeta={
-	__index=function (table,key)
-		local value=rawget(table,key)
-		if type(value)=="nil" then
+-- VM.Modules={}
+-- VM.__ModuleMeta={
+	-- __index=function (table,key)
+		-- return rawget(table,key) or rawget(VM,key)
+	-- end,
+-- }
+-- VM.__MainMeta={
+	-- __index=function (table,key)
+		-- local value=rawget(table,key)
+		-- if type(value)=="nil" then
 			
-		end
-	end,
-}
+		-- end
+	-- end,
+-- }
 
-function VM:NewModule(name,module)
-	if type(name)~="string" then return end
-	local module=module or {}
-	setmetatable(module,VM.__ModuleMeta)
-	VM.Modules[name]=module
-	return module
-end
+-- function VM:NewModule(name,module)
+	-- if type(name)~="string" then return end
+	-- local module=module or {}
+	-- setmetatable(module,VM.__ModuleMeta)
+	-- VM.Modules[name]=module
+	-- return module
+-- end
 
 function VM:GetLatency(latencyType)
 	if type(latencyType)=="string" and latencyType:lower()=="world" then
@@ -252,14 +252,15 @@ function ProcessorPrototype:Toggle()
 	end
 end
 
-function ProcessorPrototype:SetAutoRun(autorun)
+function ProcessorPrototype:SetAutoRun(autorun,charName,realmName)
 	local db=VM.db
 	if not db then print("Can't find VMDB") return end
 	db.AutoRunProcessor=db.AutoRunProcessor or {}
+	local token=self.name.."-"..(tostring(realmName) or GetRealmName()).."-"..(tostring(charName) or UnitName("player"))
 	if autorun then
-		db.AutoRunProcessor[self.name]=true
+		db.AutoRunProcessor[token]=true
 	else
-		db.AutoRunProcessor[self.name]=nil
+		db.AutoRunProcessor[token]=nil
 	end
 end
 
@@ -339,8 +340,9 @@ VM.Init=VM:NewThread(function (self)
 	VM.db.StatusEnabled=true
 	self:SetStatus("none")
 	
+	self:Sleep(5)
 	for name in pairs(VM.db.AutoRunProcessor or {}) do
-		if VM.processors[name] then
+		if VM.processors[name.."-"..GetRealmName().."-"..UnitName("player")] then
 			VM.processors[name]:Start()
 		end
 	end
