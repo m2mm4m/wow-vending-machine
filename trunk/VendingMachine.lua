@@ -336,14 +336,17 @@ VM.Init=VM:NewThread(function (self)
 	self:WaitEvent(2,"VARIABLES_LOADED")		--!!! This is a test condition !!!
 	
 	if not VendingMachineDB then VendingMachineDB={} end
-	VM.db=VendingMachineDB
-	VM.db.StatusEnabled=true
+	local db=VendingMachineDB
+	VM.db=db
+	db.StatusEnabled=true
 	self:SetStatus("none")
 	
-	self:Sleep(5)
-	for name in pairs(VM.db.AutoRunProcessor or {}) do
-		if VM.processors[name.."-"..GetRealmName().."-"..UnitName("player")] then
-			VM.processors[name]:Start()
+	if db.AutoRunProcessor then
+		self:Sleep(5)
+		for name,processor in pairs(VM.processors or {}) do
+			if db.AutoRunProcessor[name.."-"..GetRealmName().."-"..UnitName("player")] then
+				processor:Start()
+			end
 		end
 	end
 end)
