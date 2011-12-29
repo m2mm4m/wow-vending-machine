@@ -256,7 +256,7 @@ function ProcessorPrototype:SetAutoRun(autorun,charName,realmName)
 	local db=VM.db
 	if not db then print("Can't find VMDB") return end
 	db.AutoRunProcessor=db.AutoRunProcessor or {}
-	local token=self.name.."-"..(tostring(realmName) or GetRealmName()).."-"..(tostring(charName) or UnitName("player"))
+	local token=self.name.."-"..(realmName or GetRealmName()).."-"..(charName or UnitName("player"))
 	if autorun then
 		db.AutoRunProcessor[token]=true
 	else
