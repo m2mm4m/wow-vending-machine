@@ -215,9 +215,11 @@ function VM:SleepFrame(minCount,minTime)
 	end
 end
 
-function VM:NewThread(func,prio)
+function VM:NewThread(func,prio,name)
 	local prio=prio or 50
+	local name=name or "<unnamed thread>"
 	local thread=LT:New(func,prio)
+	thread:GetProperty().threadName=name..":"..tostring(thread):match("table:%s*(%S+)")
 	thread.externalLib=VM
 	return thread
 end
@@ -228,7 +230,7 @@ function ProcessorPrototype:Start()
 		VM:log(1,("%s already exists"):format(self.name))
 	else
 		VM.processors[self.name]=self
-		self.thread=VM:NewThread(self.constructor,self.prio)
+		self.thread=VM:NewThread(self.constructor,self.prio,self.name)
 		VM:log(1,("%s started"):format(self.name))
 	end
 end
@@ -281,12 +283,12 @@ function VM:NewProcessor(name,constructor,destructor,prio)
 end
 
 function VM:callback(...)
-	print("|cff00ff00callback",self,...)
+	print("|cff00ff00callback",self:GetProperty().threadName,...)
 end
 
 function VM:yieldCallback(ret,...)
 	if not ret then
-		print("|cff0000ffyC error",self,...)
+		print("|cff0000ffyC error",self:GetProperty().threadName,...)
 	end
 end
 
@@ -349,5 +351,5 @@ VM.Init=VM:NewThread(function (self)
 			end
 		end
 	end
-end)
+end,nil,"VMInit")
 VM.Init:HardResume()

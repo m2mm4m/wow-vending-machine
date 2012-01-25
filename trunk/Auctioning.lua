@@ -34,26 +34,26 @@ else
 	VM.MailList={
 		-- [61979]="Chengguan",	--Ashen Pigment
 		-- [61980]="Millionaires",	--Burning Embers
-		[61978]="Tuixin",		--Blackfallow Ink
-		[61981]="Millionaires",	--Inferno Ink
-		[52555]="Millionaires",	--Hypnotic Dust
-		[52718]="Millionaires",	--Lesser Celestial Essence
-		[52719]="Millionaires",	--Greater Celestial Essence
+		[61978]="Inkinv",		--Blackfallow Ink
+		[61981]="Luxinv",	--Inferno Ink
+		[52555]="Luxinv",	--Hypnotic Dust
+		[52718]="Luxinv",	--Lesser Celestial Essence
+		[52719]="Luxinv",	--Greater Celestial Essence
 
-		[52177]="Yalanayika",	--Carnelian
+		[52177]="Jcinv",	--Carnelian
 		[{	52178,				--Zephyrite
 			52179,				--Alicite
 			52180,				--Nightstone
 			52181,				--Hessonite
 			52182,				--Jasper
-		}]="Yalanayika",
-		[52190]="Yalanayika",	--Inferno Ruby
+		}]="Jcinv",
+		[52190]="Jcinv",	--Inferno Ruby
 		[{	52191,				--Ocean Sapphire
 			52192,				--Dream Emerald
 			52193,				--Ember Topaz
 			52194,				--Demonseye
 			52195,				--Amberjewel
-		}]="Yalanayika",
+		}]="Jcinv",
 	}
 end
 
@@ -112,10 +112,12 @@ VM:NewProcessor("Remail",function (self)
 		[52984]=true,
 		[52985]=true,
 		[52986]=true,
+		[52185]=true,		--Elementium Ore
+		[53038]=true,		--Obsidium Ore
 	}
 	if UnitName("player")=="Paupers" then
 		for key,value in pairs(mailList) do mailList[key]="Chengguan" end
-	elseif UnitName("player")=="Chengguan" then
+	elseif UnitName("player")=="Pchinv" then
 		for key,value in pairs(mailList) do mailList[key]="Pikkachu" end
 	end
 	-- print("Remail...")
@@ -128,6 +130,32 @@ VM:NewProcessor("Remail",function (self)
 		end
 	end
 end)
+
+function VM:PostalOpenAll()
+	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
+	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
+	assert(Postal,"Cannot find Postal")
+	local Postal_OpenAll = Postal:GetModule("OpenAll")
+	local PostalL=LibStub("AceLocale-3.0"):GetLocale("Postal")
+	
+	local startTime=time()
+	local count=0
+	Postal_OpenAll:OpenAll()
+	repeat
+		self:WaitSteadyValue(20,1+select(3,GetNetStats())/1000,GetInboxNumItems)
+		self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
+		local numItems,totalItems=GetInboxNumItems()
+		count=totalItems-numItems
+		if totalItems==0 then break end
+		if PostalOpenAllButton:GetText()=="Open All" then
+			print("break")
+			break
+		elseif self:HasMailToLoot() then
+			Postal_OpenAll:OpenAll()
+		end
+	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>300
+	return count
+end
 
 -------------------------------------------------------------
 
@@ -251,11 +279,9 @@ function VM:CancelAuctions(AHPath,AuctioneerName)
 		if (TSMAuc.Manage.doneCanceling and TSMAuc.Manage.doneCanceling:IsShown()) or (haveShown and Cancel.frame and not Cancel.frame:IsShown()) then break end
 		if Post.frame and Post.frame:IsShown() then haveShown=true end
 		if Cancel.frame and Cancel.frame.button:IsEnabled() then
-			self:SetStatus("keypress_vk",0x78,0)
+			self:HardDrive(true,"/click TSMAucCancelButton")
 			local text=Cancel.frame.button:GetText()
 			count=tonumber(text:match("Cancel Auction %d+ / (%d+)")) or count
-		else
-			self:SetStatus("none")
 		end
 		self:YieldThread()
 	end
@@ -305,32 +331,6 @@ function VM:TakeMails(MailPath,MailFacing,View)
 	return count
 end
 
-function VM:PostalOpenAll()
-	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
-	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
-	assert(Postal,"Cannot find Postal")
-	local Postal_OpenAll = Postal:GetModule("OpenAll")
-	local PostalL=LibStub("AceLocale-3.0"):GetLocale("Postal")
-	
-	local startTime=time()
-	local count=0
-	Postal_OpenAll:OpenAll()
-	repeat
-		self:WaitSteadyValue(20,1+select(3,GetNetStats())/1000,GetInboxNumItems)
-		self:WaitSteadyValue(nil,1,InboxCloseButton.IsShown,InboxCloseButton)
-		local numItems,totalItems=GetInboxNumItems()
-		count=totalItems-numItems
-		if totalItems==0 then break end
-		if PostalOpenAllButton:GetText()=="Open All" then
-			print("break")
-			break
-		elseif self:HasMailToLoot() then
-			Postal_OpenAll:OpenAll()
-		end
-	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>300
-	return count
-end
-
 VM:NewProcessor("DalaSell",function (self)
 	-- local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
 	local AHPath={{0.39034032821655,0.27777343988419},{0.38976144790649,0.2540397644043}}
@@ -338,6 +338,35 @@ VM:NewProcessor("DalaSell",function (self)
 	if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
 	local MailPath={{0.39074057340622, 0.2659507393837},{0.39034032821655,0.27777343988419},{0.40370684862137, 0.32425612211227,0.5}}
 	local MailFacing=3.8213820457458
+
+	local count=0
+	local prevTakeMail=time()
+	while true do
+		if self:IsMailOpen() or count>0 or time()-prevTakeMail>1200 then
+			count=self:TakeMails(MailPath,MailFacing,1)
+			prevTakeMail=time()
+		end
+		print("posting auctions")
+		self:PostAuctions(AHPath,AuctioneerName)
+		if count<10 then
+			print("cancelling auctions")
+			self:Sleep(1)
+			count=count+self:CancelAuctions(AHPath,AuctioneerName)
+			print("count",count)
+		end
+	end
+end,
+function (self)
+	self:SetStatus("none")
+end)
+
+VM:NewProcessor("ExodarSell",function (self)
+	-- local AHPath={{0.39080762863159, 0.2708243727684,2},{0.38750076293945, 0.25654846429825}}
+	local AHPath={{0.60774600505829,0.52000331878662},{0.63213300704956, 0.58582437038422}}
+	local AuctioneerName="Auctioneer Iressa"
+	-- if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
+	local MailPath={{0.63213300704956, 0.58582437038422},{0.60774600505829,0.52000331878662},{0.60113680362701, 0.51808536052704,0.5}}
+	local MailFacing=1.8157052993774
 
 	local count=0
 	local prevTakeMail=time()
