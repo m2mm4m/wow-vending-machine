@@ -191,9 +191,9 @@ function VM:OpenAH(AHPath,AuctioneerName)
 	self:SetStatus("none")
 
 	if not ret then print("OpenAH failed opening AH?") return false end
-
 	--Since there could be loads of script to run at the beginning of AUCTION_HOUSE_SHOW, wait for em
 	self:SleepFrame(15,0.5)	--Sleep for 15 OnUpdates, with at least 0.5 sec
+	GetOwnerAuctionItems()
 	return true
 end
 
