@@ -278,6 +278,9 @@ function VM:NewProcessor(name,constructor,destructor,prio)
 	for key,value in pairs(ProcessorPrototype) do
 		obj[key]=value
 	end
+	if VM.processors[name] then
+		VM.processors[name]:Stop()
+	end
 	VM.processors[name]=obj
 	VM[name]=obj		--Override previous processor if any
 end
@@ -316,6 +319,7 @@ end
 function VM:MsgBox(prompt,map,keylist)
 	local t,_,arg1,arg2={}		--t holds a unique table which is a key identifying the correct resuming call
 	local function callback(text)	--Create a closure that can resume the thread with t
+		if self:IsDead() then return end
 		self:HardResume(t,text)
 	end
 	IGAS:MsgBox(prompt,map,callback,keylist)

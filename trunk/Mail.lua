@@ -113,6 +113,21 @@ function VM:TakeInboxItem(mailID,attachmentIndex)
 	return count
 end
 
+function VM:MailMoney(amount,sendTarget)
+	local amount=tonumber(amount) or 0
+	if amount<=0 then return end
+	local gold=amount/10000
+	SetSendMailMoney(amount)
+	SendMail(sendTarget,("VM: %d"):format(gold),"")
+	local _,event=self:WaitEvent(5,"MAIL_FAILED","MAIL_SEND_SUCCESS")
+	if event=="MAIL_SEND_SUCCESS" then
+		print(("Successfully sent %dG to %s"):format(gold,sendTarget))
+	elseif not event=="MAIL_FAILED" then
+		print("Error sending money")
+	end
+	self:SleepFrame(10,0.5)
+end
+
 function VM:GetItemCountInMail(itemID)
 	local itemID=self:GetItemID(itemID)
 	if not itemID then return 0 end
@@ -171,6 +186,19 @@ function VM:DeleteInboxItem(mailID)
 	repeat
 		_,event,msg=self:WaitEvent(2+2*self:GetLatency("world"),"MAIL_INBOX_UPDATE","UI_ERROR_MESSAGE","MAIL_CLOSED")
 	until not (event=="UI_ERROR_MESSAGE" and msg~=ERR_MAIL_DATABASE_ERROR and msg~=ERR_MAIL_DELETE_ITEM_ERROR)
+end
+
+function VM:TakeTradeskillRegent(item)
+	local prevAvailable=self:GetCraftingNumAvailable(item)
+	local taken=0
+	for item,count in pairs(self:GetCraftingRegentList(item)) do
+		if GetItemCount(item)<=count then
+			taken=taken+self:LootMailItem(item,count,GetItemCount(item))
+		end
+	end
+	if taken==0 then return end
+	self:WaitExp(5,function () return prevAvailable~=self:GetCraftingNumAvailable(item) end)
+	return prevAvailable~=self:GetCraftingNumAvailable(item)
 end
 
 -- function VM:TakeMails(filter)

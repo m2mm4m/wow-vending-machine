@@ -55,18 +55,33 @@ function VM:CraftItem(itemID,numCraft)
 	return numCraft
 end
 
+function VM:GetCraftingRegentList(itemID)
+	local skillIndex=self:GetTradeskillIndexByItem(itemID)
+	if not skillIndex then return {} end
+	local t={}
+	for reagentIndex=1,GetTradeSkillNumReagents(skillIndex) do
+		local reagentName, reagentTexture, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(skillIndex, reagentIndex)
+		local link = self:GetItemID(GetTradeSkillReagentItemLink(skillIndex, reagentIndex))
+		t[link]=reagentCount
+	end
+	return t
+end
+
 function VM:GetCraftingNumAvailable(itemID)
-	if not self:IsTradeskillOpen() then return 0 end
-	if not itemID then return 0 end
-	
+	local index=self:GetTradeskillIndexByItem(itemID)
+	if not index then return 0 end
+	local _,_,numAvailable=GetTradeSkillInfo(index)
+	return numAvailable,index
+end
+
+function VM:GetTradeskillIndexByItem(itemID)
+	local itemID=self:GetItemID(itemID)
 	for index=1,GetNumTradeSkills() do
 		local item=self:GetItemID(GetTradeSkillItemLink(index))
 		if item==itemID then
-			local _,_,numAvailable=GetTradeSkillInfo(index)
-			return numAvailable,index
+			return index
 		end
 	end
-	return 0
 end
 
 function VM:RemoveTradeskillFilters()
