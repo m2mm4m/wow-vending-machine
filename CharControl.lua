@@ -9,6 +9,16 @@ local function sgn(n)
 	return n>=0 and 1 or -1 
 end
 
+function VM:IsPlayerIdle()
+	if LootFrame:IsShown() then return false end
+	if UnitCastingInfo("player") then return false end
+	if UnitChannelInfo("player") then return false end
+	if GetUnitSpeed("player")~=0 then return false end
+	if IsFalling("player") then return false end
+	if UnitIsDeadOrGhost("player") then return false end
+	return true
+end
+
 function VM:WaitStartMoving()
 	local px,py
 	local cx,cy=GetPlayerMapPosition("player")

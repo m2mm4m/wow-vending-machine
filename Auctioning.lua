@@ -2,7 +2,7 @@
 
 VM.DEList={
 	61979,		--Ashen Pigment
-	
+	-- 61978,		--Blackfallow Ink
 	52988,		--Whiptail
 	52987,		--Twilight Jasmine
 	52983,		--Cinderbloom
@@ -13,8 +13,12 @@ VM.DEList={
 	52185,		--Elementium Ore
 	53038,		--Obsidium Ore
 
-	52306,		--Jasper Ring
-	52310,		--Jasper Ring (Rare)
+	52306,				--Jasper Ring
+	52310,				--Jasper Ring (Rare)
+	52307,				--Alicite Pendant
+	52312,				--Alicite Pendant (Rare)
+	52309,				--Nightstone Choker
+	52314,				--Nightstone Choker (Rare)
 	52492,		--Carnelian Spikes
 	52329,		--Life
 }
@@ -23,6 +27,10 @@ VM.CraftList={
 	43126,		--Ink of the Sea
 	61978,		--Blackfallow Ink
 	61981,		--Inferno Ink
+	
+	52306,		--Jasper Ring
+	52307,		--Alicite Pendant
+	52309,		--Nightstone Choker
 }
 if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" then
 	VM.MailList={
@@ -40,22 +48,58 @@ else
 		[52718]="Luxinv",	--Lesser Celestial Essence
 		[52719]="Luxinv",	--Greater Celestial Essence
 
-		[52177]="Jcinv",	--Carnelian
-		[{	52178,				--Zephyrite
-			52179,				--Alicite
+		[52178]="Jcinv",		--Zephyrite
+		[{	52179,				--Alicite
 			52180,				--Nightstone
-			52181,				--Hessonite
 			52182,				--Jasper
 		}]="Jcinv",
-		[52190]="Jcinv",	--Inferno Ruby
+		[{	52190,				--Inferno Ruby
+			52193,				--Ember Topaz
+			52177,				--Carnelian
+			52181,				--Hessonite
+		}]="Lanaya",
 		[{	52191,				--Ocean Sapphire
 			52192,				--Dream Emerald
-			52193,				--Ember Topaz
 			52194,				--Demonseye
 			52195,				--Amberjewel
 		}]="Jcinv",
 	}
 end
+
+VM:NewProcessor("AutoCraft",function(self)
+	local mailList={[{
+		52306,				--Jasper Ring
+		52310,				--Jasper Ring (Rare)
+		52307,				--Alicite Pendant
+		52312,				--Alicite Pendant (Rare)
+		52309,				--Nightstone Choker
+		52314,				--Nightstone Choker (Rare)
+	}]="Weiba",}
+	while true do
+		self:WaitExp(nil,self.IsPlayerIdle)
+		for index,item in ipairs(VM.CraftList) do
+			self:CraftItem(item)
+			if not self:CanLootItem(item,1) then break end
+		end
+		if self:IsMailOpen() then
+			for itemID,sendTarget in pairs(mailList) do
+				self:MailBulkItem(itemID,sendTarget)
+			end
+			self:SleepFrame(10,0.5)
+		end
+		
+		local available=0
+		for index,item in ipairs(VM.CraftList) do
+			available=available+self:GetCraftingNumAvailable(item)
+		end
+		if available==0 then
+			for index,item in ipairs(VM.CraftList) do
+				if self:TakeTradeskillRegent(item) then break end
+			end
+		end
+		self:YieldThread()
+	end
+end)
 
 VM:NewProcessor("AutoDE",function(self)
 	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
@@ -365,14 +409,22 @@ VM:NewProcessor("ExodarSell",function (self)
 	local AHPath={{0.60774600505829,0.52000331878662},{0.63213300704956, 0.58582437038422}}
 	local AuctioneerName="Auctioneer Iressa"
 	-- if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
-	local MailPath={{0.63213300704956, 0.58582437038422},{0.60774600505829,0.52000331878662},{0.60113680362701, 0.51808536052704,0.5}}
+	local MailPath={{0.63213300704956, 0.58582437038422},{0.60774600505829,0.52000331878662},{0.60023027658463, 0.51842176914215,0.5}}
 	local MailFacing=1.8157052993774
-
+	local goldReserve=1000
+	local sendGoldMin=5000
+	local sendGoldTarget="Pikkachu"
+	
+	-- print(MailPath[#MailPath][1],MailPath[#MailPath][2],self:GetPlayerPos())
 	local count=0
 	local prevTakeMail=time()
 	while true do
-		if self:IsMailOpen() or count>0 or time()-prevTakeMail>1200 then
+		if self:IsMailOpen() or (self:CalcDistance(MailPath[#MailPath][1],MailPath[#MailPath][2],select(3,self:GetPlayerPos()))<=MailPath[#MailPath][3]) or count>0 or time()-prevTakeMail>1200 then
 			count=self:TakeMails(MailPath,MailFacing,1)
+			local amount=(floor(GetMoney()/10000/goldReserve)-1)*goldReserve
+			if amount>=sendGoldMin then
+				self:MailMoney(amount*10000,sendGoldTarget)
+			end
 			prevTakeMail=time()
 		end
 		print("posting auctions")
@@ -383,6 +435,7 @@ VM:NewProcessor("ExodarSell",function (self)
 			count=count+self:CancelAuctions(AHPath,AuctioneerName)
 			print("count",count)
 		end
+		self:PostAuctions(AHPath,AuctioneerName)
 	end
 end,
 function (self)
