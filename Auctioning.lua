@@ -32,7 +32,7 @@ VM.CraftList={
 	52307,		--Alicite Pendant
 	52309,		--Nightstone Choker
 }
-if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" then
+if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" or UnitName("player")=="那个图腾" then
 	VM.MailList={
 		[61978]="歆颜尐美",		--Blackfallow Ink
 		-- [61979]="歆颜尐美",		--Ashen Pigment
@@ -44,9 +44,9 @@ else
 		-- [61980]="Millionaires",	--Burning Embers
 		[61978]="Inkinv",		--Blackfallow Ink
 		[61981]="Luxinv",	--Inferno Ink
-		[52555]="Luxinv",	--Hypnotic Dust
-		[52718]="Luxinv",	--Lesser Celestial Essence
-		[52719]="Luxinv",	--Greater Celestial Essence
+		[52555]="Enchinv",	--Hypnotic Dust
+		[52718]="Enchinv",	--Lesser Celestial Essence
+		[52719]="Enchinv",	--Greater Celestial Essence
 
 		[52178]="Jcinv",		--Zephyrite
 		[{	52179,				--Alicite
@@ -411,9 +411,11 @@ VM:NewProcessor("ExodarSell",function (self)
 	-- if GetLocale()=="zhCN" then AuctioneerName="布拉斯博特·机钳" end
 	local MailPath={{0.63213300704956, 0.58582437038422},{0.60774600505829,0.52000331878662},{0.60023027658463, 0.51842176914215,0.5}}
 	local MailFacing=1.8157052993774
-	local goldReserve=1000
+	local goldReserve=500
 	local sendGoldMin=5000
 	local sendGoldTarget="Pikkachu"
+	
+	_G["DoEmote"]=function() end
 	
 	-- print(MailPath[#MailPath][1],MailPath[#MailPath][2],self:GetPlayerPos())
 	local count=0
@@ -421,9 +423,9 @@ VM:NewProcessor("ExodarSell",function (self)
 	while true do
 		if self:IsMailOpen() or (self:CalcDistance(MailPath[#MailPath][1],MailPath[#MailPath][2],select(3,self:GetPlayerPos()))<=MailPath[#MailPath][3]) or count>0 or time()-prevTakeMail>1200 then
 			count=self:TakeMails(MailPath,MailFacing,1)
-			local amount=(floor(GetMoney()/10000/goldReserve)-1)*goldReserve
-			if amount>=sendGoldMin then
-				self:MailMoney(amount*10000,sendGoldTarget)
+			local gold=(floor(GetMoney()/10000/goldReserve)-1)*goldReserve
+			if gold>=sendGoldMin then
+				self:MailMoney(gold,sendGoldTarget)
 			end
 			prevTakeMail=time()
 		end

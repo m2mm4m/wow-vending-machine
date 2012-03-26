@@ -348,7 +348,7 @@ VM.Init=VM:NewThread(function (self)
 	self:SetStatus("none")
 	
 	if db.AutoRunProcessor then
-		self:Sleep(5)
+		self:SleepFrame(20,1)
 		for name,processor in pairs(VM.processors or {}) do
 			if db.AutoRunProcessor[name.."-"..GetRealmName().."-"..UnitName("player")] then
 				processor:Start()

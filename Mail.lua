@@ -113,11 +113,12 @@ function VM:TakeInboxItem(mailID,attachmentIndex)
 	return count
 end
 
-function VM:MailMoney(amount,sendTarget)
-	local amount=tonumber(amount) or 0
-	if amount<=0 then return end
-	local gold=amount/10000
-	SetSendMailMoney(amount)
+function VM:MailMoney(gold,sendTarget)
+	print("MailMoney",gold,sendTarget)
+	local gold=tonumber(gold) or 0
+	if gold<=0 then return end
+	MailFrameTab_OnClick(nil,2)
+	SetSendMailMoney(gold*10000)
 	SendMail(sendTarget,("VM: %d"):format(gold),"")
 	local _,event=self:WaitEvent(5,"MAIL_FAILED","MAIL_SEND_SUCCESS")
 	if event=="MAIL_SEND_SUCCESS" then
@@ -125,6 +126,7 @@ function VM:MailMoney(amount,sendTarget)
 	elseif not event=="MAIL_FAILED" then
 		print("Error sending money")
 	end
+	MailFrameTab_OnClick(nil,1)
 	self:SleepFrame(10,0.5)
 end
 
