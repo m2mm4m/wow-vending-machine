@@ -35,8 +35,8 @@ VM.CraftList={
 if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" or UnitName("player")=="那个图腾" then
 	VM.MailList={
 		[61978]="歆颜尐美",		--Blackfallow Ink
-		-- [61979]="歆颜尐美",		--Ashen Pigment
-		[61981]="歆颜尐美",	--Inferno Ink
+		[61979]="歆颜尐美",		--Ashen Pigment
+		[61981]="歆颜尐美",		--Inferno Ink
 	}
 else
 	VM.MailList={
@@ -45,8 +45,8 @@ else
 		[61978]="Inkinv",		--Blackfallow Ink
 		[61981]="Luxinv",	--Inferno Ink
 		[52555]="Enchinv",	--Hypnotic Dust
-		[52718]="Enchinv",	--Lesser Celestial Essence
-		[52719]="Enchinv",	--Greater Celestial Essence
+		[52718]="Luxinv",	--Lesser Celestial Essence
+		[52719]="Luxinv",	--Greater Celestial Essence
 
 		[52178]="Jcinv",		--Zephyrite
 		[{	52179,				--Alicite
@@ -421,7 +421,7 @@ VM:NewProcessor("ExodarSell",function (self)
 	local count=0
 	local prevTakeMail=time()
 	while true do
-		if self:IsMailOpen() or (self:CalcDistance(MailPath[#MailPath][1],MailPath[#MailPath][2],select(3,self:GetPlayerPos()))<=MailPath[#MailPath][3]) or count>0 or time()-prevTakeMail>1200 then
+		if self:IsMailOpen() or (self:CalcDistanceFromPlayer(unpack(MailPath[#MailPath]))<=MailPath[#MailPath][3]) or count>0 or time()-prevTakeMail>1200 then
 			count=self:TakeMails(MailPath,MailFacing,1)
 			local gold=(floor(GetMoney()/10000/goldReserve)-1)*goldReserve
 			if gold>=sendGoldMin then

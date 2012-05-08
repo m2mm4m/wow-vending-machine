@@ -329,6 +329,16 @@ function VM:MsgBox(prompt,map,keylist)
 	return arg2
 end
 
+function VM:WarningStart()
+	if VM.WarningThread and not VM.WarningThread:IsDead() then return end
+	VM.WarningThread=VM:NewThread(function (self)
+		while true do
+			PlaySoundFile("Interface\\AddOns\\VendingMachine\\Sounds\\alarm.ogg", "Master")
+			self:Sleep(2.5)
+		end
+	end,nil,"VMWarning")
+end
+
 VM.Init=VM:NewThread(function (self)
 	VM.StatusFrame=CreateFrame("Frame","VendingMachineStatusFrame",nil)
 	VM.StatusTexture=VM.StatusFrame:CreateTexture("$parentOverlay","OVERLAY")

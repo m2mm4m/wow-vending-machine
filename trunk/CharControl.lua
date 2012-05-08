@@ -97,13 +97,12 @@ end
 
 function VM:MoveRoute(route,start)
 	if type(route)~="table" or #route==0 then return end
-	local cmap,cfloor,cx,cy=self:GetPlayerPos()
 	if not start or start<=0 or start>#route then
 		start=1
 		for index,node in ipairs(route) do
 			local nx,ny,nt=unpack(node)
 			nt=nt or route.defaultTolerance or self.charMoveTolerance or 1
-			if self:CalcDistance(cx,cy,nx,ny)<nt then
+			if self:CalcDistanceFromPlayer(nx,ny)<nt then
 				start=index
 				break
 			end
@@ -118,11 +117,10 @@ end
 
 function VM:MoveToPos(x,y,tolerance)
 	local tolerance=tolerance or self.charMoveTolerance or 1
-	local cmap,cfloor,cx,cy=self:GetPlayerPos()
-	local dist=self:CalcDistance(cx,cy,x,y)
+	local dist=self:CalcDistanceFromPlayer(x,y)
 	-- print("Moving from",cx,cy,"to",x,y,"in map",cmap,cfloor,"dist",dist)
 	while dist>tolerance do
-		local direction=self:CalcDirection(cx,cy,x,y)			--calc direction
+		local direction=self:CalcDirectionFromPlayer(x,y)			--calc direction
 		self:SetPlayerFacing(direction)
 		-- print("direction",direction)
 		
@@ -140,8 +138,7 @@ function VM:MoveToPos(x,y,tolerance)
 			-- self:YieldThread()
 		-- until px==GetPlayerMapPosition("player") and py==select(2,GetPlayerMapPosition("player"))
 		
-		cmap,cfloor,cx,cy=self:GetPlayerPos()
-		dist=self:CalcDistance(cx,cy,x,y)
+		dist=self:CalcDistanceFromPlayer(x,y)
 		-- print("Moving from",cx,cy,"to",x,y,"in map",cmap,cfloor,"dist",dist)
 	end
 	self:SetStatus("none")
@@ -160,6 +157,11 @@ function VM:CalcDistance(fromX,fromY,toX,toY,map,floor)
 	return Astrolabe:ComputeDistance(map,floor,fromX,fromY,map,floor,toX,toY)
 end
 
+function VM:CalcDistanceFromPlayer(toX,toY)
+	local map,floor,x,y=self:GetPlayerPos()
+	return self:CalcDistance(x,y,toX,toY,map,floor)
+end
+
 function VM:CalcDirection(fromX,fromY,toX,toY,map,floor)
 	if not (map and floor) then map,floor=self:GetPlayerPos() end
 	local sgnX,sgnY=sgn(toX-fromX),sgn(toY-fromY)
@@ -168,6 +170,11 @@ function VM:CalcDirection(fromX,fromY,toX,toY,map,floor)
 	--print(xoffset,yoffset)
 	local ang=atan(yoffset/xoffset)
 	return (1+0.5*sgnX)*pi-ang*sgnX*sgnY
+end
+
+function VM:CalcDirectionFromPlayer(toX,toY)
+	local map,floor,x,y=self:GetPlayerPos()
+	return self:CalcDirection(x,y,toX,toY,map,floor)
 end
 
 function VM:GetPlayerPos()
@@ -182,6 +189,15 @@ function VM:GetExpectedSpeed()
 	local speed,groundSpeed,flightSpeed,swimSpeed = GetUnitSpeed("player")
 	return IsFlying() and flightSpeed*cos(GetUnitPitch("player")) or groundSpeed
 end
+
+-- if VM.SecureRangeChecker then VM.SecureRangeChecker:Dispose() end
+-- VM.SecureRangeChecker=VM:NewThread(function (self)
+	-- while true do
+		-- if not self:IsInLegalPath() then
+			-- self.SecureRangeChecker
+		-- self:Sleep(self.freq)
+	-- end
+-- end,40)
 
 VM.SpeedTracker=VM.SpeedTracker or VM:NewThread(function (self)
 	local pmap,pfloor,px,py,ptime,cmap,cfloor,cx,cy,ctime
