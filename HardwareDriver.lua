@@ -219,14 +219,15 @@ function VM:HardDriveStop()
 	self.HardDriveMaintainer:Suspend()
 end
 
-VM.HardDriveMaintainer=VM:NewThread(function (self)
+-- Maintainer thread that clean-up for unexpected disposed threads
+VM:NewThread("HardDriveMaintainer", function (self)
 	while true do
 		if status.thread and status.thread:IsDead() and not InCombatLockdown() then
 			self:HardDriveStop()
 		end
 		self:YieldThread()
 	end
-end,1)
+end, 1)
 VM.HardDriveMaintainer:Suspend()
 
 function VM:HardDrive(isSecure,action,exitCondition)
@@ -238,4 +239,43 @@ function VM:HardDrive(isSecure,action,exitCondition)
 			ret,status=self:HardDriveRaw(true,nil)
 		end
 	until (ret=="HardDrive" and status=="Done") or (exitCondition and exitCondition())
+end
+
+
+-- Simple queue for actions that do not require threading
+VM:NewThread("HardwareQueue", function (self)
+	while true do
+		if #self.Queue>1 then
+			local item = self.Queue[1]
+			if type(item) == "function" then	-- Simple function
+				local ret1, ret2 = self:HardDriveRaw()
+				if ret1 == "HardDrive" and ret2 == "Done" then
+					pcall(item)
+				end
+			elseif type(item) == "table" and type(item[1]) == "function" then	-- Function with args
+				local ret1, ret2 = self:HardDriveRaw()
+				if ret1 == "HardDrive" and ret2 == "Done" then
+					pcall(unpack(item))
+				end
+			else	-- Invalid item, remove from queue
+				tremove(Queue, 1)
+			end
+		else
+			self:YieldThread()
+		end
+	end
+end, 10)
+VM.HardwareQueue.Queue = {}
+
+function VM.HardwareQueue:AddItem(item)
+	tinsert(self.HardwareQueue.Queue, item)
+end
+
+function VM.HardwareQueue:RemoveItem(item)
+	local Queue = self.HardwareQueue.Queue
+	for index = #Queue, 1, -1 do
+		if Queue[index] == item then
+			tremove(Queue, index)
+		end
+	end
 end

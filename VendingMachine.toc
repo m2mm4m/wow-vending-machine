@@ -9,9 +9,11 @@ Libs\Astrolabe\Load.xml
 Libs\LibThread\LibThread.lua
 
 VendingMachine.lua
+Threading.lua
 CharControl.lua
 HardwareDriver.lua
-Auctioning.lua
+TSM.lua
 Mail.lua
 Tradeskill.lua
+Warden.lua
 Localization.lua

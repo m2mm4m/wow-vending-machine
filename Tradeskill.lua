@@ -41,14 +41,16 @@ function VM:OpenTradeskill(Tradeskill,retry)
 end
 
 --TODO: return the actual number of item crafted
-function VM:CraftItem(itemID,numCraft)
+function VM:CraftItem(itemID, numCraft)
+	if not self:IsTradeskillOpen() then return 0 end
 	local numAvailable,index=self:GetCraftingNumAvailable(itemID)
 	if not numAvailable then return 0 end
+	local numCraft=numCraft
 	if not numCraft or numCraft>numAvailable then
 		numCraft=numAvailable
 	end
 	if numCraft<=0 then return 0 end
-	self:HardDrive(true,("/run DoTradeSkill(%d,%d)"):format(index,numAvailable))
+	self:HardDrive(true,("/run DoTradeSkill(%d,%d)"):format(index,numCraft))
 	self:WaitExp(nil,function () return UnitCastingInfo("player") end)
 	self:WaitSteadyValue(15,0.5,function () return self:GetTradeskillRepeatCount(itemID)==1 end)
 	self:WaitSteadyValue(15,0.5,function () return not UnitCastingInfo("player") end)
@@ -56,6 +58,7 @@ function VM:CraftItem(itemID,numCraft)
 end
 
 function VM:GetCraftingRegentList(itemID)
+	if not self:IsTradeskillOpen() then return {} end
 	local skillIndex=self:GetTradeskillIndexByItem(itemID)
 	if not skillIndex then return {} end
 	local t={}
@@ -67,7 +70,22 @@ function VM:GetCraftingRegentList(itemID)
 	return t
 end
 
+function VM:GetCraftingNumAvailableInMail(itemID)
+	if not self:IsTradeskillOpen() then return 0 end
+	local skillIndex=self:GetTradeskillIndexByItem(itemID)
+	if not skillIndex then return 0 end
+	local available
+	for reagentIndex=1,GetTradeSkillNumReagents(skillIndex) do
+		local reagentName, reagentTexture, reagentCount, playerReagentCount = GetTradeSkillReagentInfo(skillIndex, reagentIndex)
+		local link = self:GetItemID(GetTradeSkillReagentItemLink(skillIndex, reagentIndex))
+		local count=floor((self:GetItemCountInMail(link)+playerReagentCount)/reagentCount)
+		available=min(count, available or count)
+	end
+	return (available or 0), skillIndex
+end
+
 function VM:GetCraftingNumAvailable(itemID)
+	if not self:IsTradeskillOpen() then return 0 end
 	local index=self:GetTradeskillIndexByItem(itemID)
 	if not index then return 0 end
 	local _,_,numAvailable=GetTradeSkillInfo(index)
@@ -85,6 +103,7 @@ function VM:GetTradeskillIndexByItem(itemID)
 end
 
 function VM:RemoveTradeskillFilters()
+	if not self:IsTradeskillOpen() then return end
 	if TradeSkillFilterBarExitButton then
 		TradeSkillFilterBarExitButton:Click()
 	end

@@ -63,17 +63,17 @@ function VM:LootMailItem(item,quantity,taken)
 	local item=self:GetItemID(item)
 	if not (item and self:IsMailOpen()) then self:YieldThread() return 0 end
 	local totalTaken=taken or 0
-	local current=current or 0
+	if quantity and totalTaken>=quantity then return 0 end
 	for mailID=1,GetInboxNumItems() do
 		local packageIcon,stationeryIcon,sender,subject,money,CODAmount,daysLeft,itemCount,wasRead,wasReturned,textCreated,canReply,isGM,itemQuantity=GetInboxHeaderInfo(mailID)
 		--print("|cffff0000mail",mailID,"CODAmount",CODAmount,"itemCount",itemCount)
 		if not CODAmount or CODAmount==0 then
 			for attachmentIndex=1,(itemCount and ATTACHMENTS_MAX_SEND or 0) do
 				local itemID=self:GetItemID(GetInboxItemLink(mailID,attachmentIndex))
-				if itemID==item then
+				if self:reverse(item)[itemID] then
 					--print("|cffff0000mail",mailID," att",attachmentIndex,GetInboxItemLink(mailID,attachmentIndex),count,itemID,item)
 					local name,itemTexture,count,quality,canUse=GetInboxItem(mailID,attachmentIndex)
-					if self:CanLootItem(item,count) then
+					if self:CanLootItem(itemID,count) then
 						totalTaken=totalTaken+self:TakeInboxItem(mailID,attachmentIndex)
 						self:YieldThread()
 						if (quantity and totalTaken>=quantity) or not self:IsMailOpen() then
@@ -92,6 +92,7 @@ end
 -- Take an item from inbox if applicable
 -- @return count		count of items taken
 function VM:TakeInboxItem(mailID,attachmentIndex)
+	if not self:IsMailOpen() then return 0 end
 	if not (mailID and attachmentIndex) then return 0 end
 	local name,itemTexture,count,quality,canUse=GetInboxItem(mailID,attachmentIndex)
 	local item=self:GetItemID(GetInboxItemLink(mailID,attachmentIndex))
@@ -115,6 +116,7 @@ end
 
 function VM:MailMoney(gold,sendTarget)
 	print("MailMoney",gold,sendTarget)
+	if not self:IsMailOpen() then return end
 	local gold=tonumber(gold) or 0
 	if gold<=0 then return end
 	MailFrameTab_OnClick(nil,2)
@@ -131,19 +133,20 @@ function VM:MailMoney(gold,sendTarget)
 end
 
 function VM:GetItemCountInMail(itemID)
+	if not self:IsMailOpen() then return 0 end
 	local itemID=self:GetItemID(itemID)
 	if not itemID then return 0 end
-	local count=0
+	local total=0
 	for mailID=1,GetInboxNumItems() do
 		for attachmentIndex=1,ATTACHMENTS_MAX_SEND do
 			local InboxItemID=self:GetItemID(GetInboxItemLink(mailID,attachmentIndex))
 			if InboxItemID==itemID then
 				local name,itemTexture,count,quality,canUse = GetInboxItem(mailID,attachmentIndex)
-				count=count+quality
+				total=total+count
 			end
 		end
 	end
-	return count
+	return total
 end
 
 function VM:MailBulkItem(item,sendTarget)
@@ -151,6 +154,7 @@ function VM:MailBulkItem(item,sendTarget)
 	local sendItem=self:GetItemID(item)
 	if not sendItem or (type(sendItem)=="table" and #sendItem==0) then return end
 	if type(sendTarget)~="string" or sendTarget:len()==0 then return end
+	if sendTarget:lower()==UnitName("player"):lower() then return end
 	local itemName=GetItemInfo(type(sendItem)=="table" and sendItem[1] or sendItem)
 	
 	while self:sum(self:Operator("GetNumItemStacks",sendItem))>=12 do
@@ -160,6 +164,7 @@ function VM:MailBulkItem(item,sendTarget)
 		for bag=0,NUM_BAG_SLOTS do
 			for slot=1,GetContainerNumSlots(bag) do
 				if self:reverse(sendItem)[self:GetItemID(GetContainerItemLink(bag,slot))] and numpicked<ATTACHMENTS_MAX_SEND and select(8,GetItemInfo(GetContainerItemLink(bag,slot)))==select(2,GetContainerItemInfo(bag,slot)) then
+					ClearCursor()
 					PickupContainerItem(bag, slot)
 					ClickSendMailItemButton()
 					numpicked=numpicked+1
@@ -171,7 +176,7 @@ function VM:MailBulkItem(item,sendTarget)
 		
 		local _,event=self:WaitEvent(5,"MAIL_FAILED","MAIL_SEND_SUCCESS")
 		if event=="MAIL_SEND_SUCCESS" then
-			print("Successfully sent "..itemName)
+			print(("Successfully sent %s to %s"):format(itemName, sendTarget))
 		elseif not event=="MAIL_FAILED" then
 			print("Error sending mail for "..itemName)
 		end
@@ -180,6 +185,7 @@ function VM:MailBulkItem(item,sendTarget)
 end
 
 function VM:DeleteInboxItem(mailID)
+	if not self:IsMailOpen() then return end
 	if not mailID then return end
 	
 	DeleteInboxItem(mailID)
@@ -190,12 +196,14 @@ function VM:DeleteInboxItem(mailID)
 	until not (event=="UI_ERROR_MESSAGE" and msg~=ERR_MAIL_DATABASE_ERROR and msg~=ERR_MAIL_DELETE_ITEM_ERROR)
 end
 
-function VM:TakeTradeskillRegent(item)
+function VM:TakeTradeskillRegent(item, numCraft)
 	local prevAvailable=self:GetCraftingNumAvailable(item)
 	local taken=0
+	local numCraft=numCraft or 1
 	for item,count in pairs(self:GetCraftingRegentList(item)) do
-		if GetItemCount(item)<=count then
-			taken=taken+self:LootMailItem(item,count,GetItemCount(item))
+		local requiredCount=count*numCraft
+		if GetItemCount(item)<requiredCount then
+			taken=taken+self:LootMailItem(item,requiredCount,GetItemCount(item))
 		end
 	end
 	if taken==0 then return end

@@ -7,7 +7,7 @@ if not _G[_GlobalName] then _G[_GlobalName] = VM end
 _G["VM"]=VM
 VM.version = _VERSION
 VM.UIVer=select(4,GetBuildInfo())
-VM.LogLevel=1
+VM.LogLevel=5
 local LT=LibThread
 
 VM.StatusCode={
@@ -67,7 +67,7 @@ function VM:GetSafeLink(link)
 	if not link then return end
 	local _,link=GetItemInfo(link)
 	if not link then
-		if LT:IsThread(self) and self.externalLib==VM then
+		if LT:IsThread(self) and self:GetProperty(_GlobalName)==_VERSION then
 			self:WaitEvent(5,"GET_ITEM_INFO_RECEIVED")
 			_,link=GetItemInfo(link)
 		else
@@ -85,10 +85,11 @@ function VM:GetItemID(link)
 		local reqlink=select(2,GetItemInfo(link))
 		if reqlink then
 			link=reqlink
-		elseif LT:IsThread(self) and self.externalLib==VM then
+		elseif LT:IsThread(self) and self:GetProperty(_GlobalName)==_VERSION then
 			self:WaitEvent(5,"GET_ITEM_INFO_RECEIVED")
 			link=select(2,GetItemInfo(link))
 		else
+			print("Failed converting link", link)
 			return
 		end
 	else
@@ -96,6 +97,27 @@ function VM:GetItemID(link)
 	end
 	link=link and link:match("item:(%d+)")
 	return tonumber(link)
+end
+
+function VM:FormatItemList(itemList, sortFunc)
+	local itemListReversed = {}
+	local itemListFormatted = {}
+	-- Get standard link list
+	for index, value in pairs(itemList) do
+		local link = self:GetItemLink(value)
+		if link then
+			itemListReversed[link] =true
+		end
+	end
+	
+	for link in pairs(itemListReversed) do
+		tinsert(itemListFormatted, link)
+	end
+	
+	if type(sortFunc) == "function" then
+		table.sort(itemListFormatted, sortFunc)
+	end
+	return itemListFormatted
 end
 
 function VM:FindContainerItem(itemID)
@@ -175,6 +197,17 @@ function VM:reverse(t)
 	return r
 end
 
+function VM:WaitEventConditional(timeOut, condition, ...)
+	local startTime=GetTime()
+	repeat
+		local ret={self:WaitEvent(timeOut-(GetTime()-startTime), ...)}
+		if condition(unpack(ret)) then
+			return unpack(ret)
+		end
+	until GetTime()-startTime>=timeOut
+	return self, "THREAD_TIMEOUT", GetTime()-startTime
+end
+
 function VM:WaitSteadyValue(minCount,minTime,func,...)
 	local count=0
 	local time=GetTime()
@@ -215,23 +248,67 @@ function VM:SleepFrame(minCount,minTime)
 	end
 end
 
-function VM:NewThread(func,prio,name)
-	local prio=prio or 50
-	local name=name or "<unnamed thread>"
+function VM:WaitSecureHook(timeOut,func)
+	self:RegisterSecureHook(func)
+	return self:WaitEventConditional(timeOut,
+		function (self, event, funcName)
+			if event=="SECURE_HOOK_CALLED" and funcName==func then
+				return true
+			end
+		end, "SECURE_HOOK_CALLED")
+end
+
+do
+	local SecureHookRegistry={}
+	function VM:RegisterSecureHook(func)
+		if SecureHookRegistry[func] then
+			return
+		else
+			local function hookFunc(...)
+				LT:FireEvent("SECURE_HOOK_CALLED", func, ...)
+			end
+			hooksecurefunc(func, hookFunc)
+		end
+	end
+	
+	local SlashCmdRegistry={}
+	function VM:RegisterSlashCmd(cmd, ...)
+		
+	end
+	
+	function VM:UnregisterSlashCmd(cmd, ...)
+	
+	end
+end
+
+function VM:NewThread(arg1, arg2, arg3, arg4)
+	local prio, name, func, isPrivate
+	if type(arg1)=="function" then
+		func=arg1
+		prio=arg2
+	else
+		name=arg1
+		func=arg2
+		prio=arg3
+		isPrivate=arg4
+	end
+	prio=prio or 50
 	local thread=LT:New(func,prio)
-	thread:GetProperty().threadName=name..":"..tostring(thread):match("table:%s*(%S+)")
-	thread.externalLib=VM
+	thread:SetName(name)
+	thread:SetProperty("externalLib", VM)
+	thread:SetProperty(_GlobalName, _VERSION)
+	if name and not isPrivate then VM[name]=thread end
 	return thread
 end
 
 local ProcessorPrototype={}
 function ProcessorPrototype:Start()
 	if self.thread then
-		VM:log(1,("%s already exists"):format(self.name))
+		return ("%s already exists"):format(self.name)
 	else
 		VM.processors[self.name]=self
-		self.thread=VM:NewThread(self.constructor,self.prio,self.name)
-		VM:log(1,("%s started"):format(self.name))
+		self.thread=VM:NewThread(self.name.."Thread", self.constructor, self.prio)
+		return ("%s started"):format(self.name)
 	end
 end
 
@@ -240,17 +317,17 @@ function ProcessorPrototype:Stop()
 		self.thread:Dispose()
 		if self.destructor then pcall(self.destructor,self.thread) end
 		self.thread=nil
-		VM:log(1,("%s stopped"):format(self.name))
+		return ("%s stopped"):format(self.name)
 	else
-		VM:log(1,("%s doesn't exist"):format(self.name))
+		return ("%s doesn't exist"):format(self.name)
 	end
 end
 
 function ProcessorPrototype:Toggle()
 	if self.thread then
-		self:Stop()
+		return self:Stop()
 	else
-		self:Start()
+		return self:Start()
 	end
 end
 
@@ -286,12 +363,12 @@ function VM:NewProcessor(name,constructor,destructor,prio)
 end
 
 function VM:callback(...)
-	print("|cff00ff00callback",self:GetProperty().threadName,...)
+	print("|cff00ff00callback",self:GetName(),...)
 end
 
 function VM:yieldCallback(ret,...)
 	if not ret then
-		print("|cff0000ffyC error",self:GetProperty().threadName,...)
+		print("|cff0000ffyC error",self:GetName(),...)
 	end
 end
 
@@ -329,17 +406,7 @@ function VM:MsgBox(prompt,map,keylist)
 	return arg2
 end
 
-function VM:WarningStart()
-	if VM.WarningThread and not VM.WarningThread:IsDead() then return end
-	VM.WarningThread=VM:NewThread(function (self)
-		while true do
-			PlaySoundFile("Interface\\AddOns\\VendingMachine\\Sounds\\alarm.ogg", "Master")
-			self:Sleep(2.5)
-		end
-	end,nil,"VMWarning")
-end
-
-VM.Init=VM:NewThread(function (self)
+VM:NewThread("VMInit", function (self)
 	VM.StatusFrame=CreateFrame("Frame","VendingMachineStatusFrame",nil)
 	VM.StatusTexture=VM.StatusFrame:CreateTexture("$parentOverlay","OVERLAY")
 
@@ -365,5 +432,5 @@ VM.Init=VM:NewThread(function (self)
 			end
 		end
 	end
-end,nil,"VMInit")
-VM.Init:HardResume()
+end)
+VM.VMInit:HardResume()
