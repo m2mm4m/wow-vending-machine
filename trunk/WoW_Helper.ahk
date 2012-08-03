@@ -17,7 +17,7 @@ SetGlobal() {
 	Author:="llxibo"
 	
 	; WoW windows information and default keypressing config
-	WoWTitle:={"魔兽世界":"WoW-CN", "World of Warcraft":"WoW-EU", "魔獸世界":"WoW-TW"}
+	WoWTitle:={"魔兽世界":"WoW-CN", "World of Warcraft":"WoW-EU", "魔獸世界":"WoW-TW", "Diablo III":"D3-EU", "暗黑破壞神III":"D3-TW"}
 	DefaultHotKey:="{f9}"
 	DefaultInterval:=5000
 	
@@ -87,7 +87,7 @@ SendKeyAuto(label) {
 ; Check if a window is WoW client
 IsWoWWindow(winID) {
 	WinGetClass,t_WindowClass,% "ahk_id" . winID
-	return t_WindowClass="GxWindowClass"
+	return t_WindowClass="GxWindowClass" or t_WindowClass="D3 Main Window Class"
 }
 
 ; Set default settings for a WinInfo object. Will not reset the object if it's alrealy initialized

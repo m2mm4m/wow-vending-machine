@@ -1,42 +1,58 @@
 ﻿local VM=VendingMachine
 
+local MAILING=1
+local DISENCHANT=13262
+local PROSPECTING=31252
+local MILLING=51005
+
+VM.DERequiredCount={
+	[DISENCHANT]=1,
+	[PROSPECTING]=5,
+	[MILLING]=5,
+}
+
 VM.DEList={
-	61979,		--Ashen Pigment
-	-- 61978,		--Blackfallow Ink
-	52988,		--Whiptail
-	52987,		--Twilight Jasmine
-	52983,		--Cinderbloom
-	52984,		--Stormvine
-	-- 52985,		--Azshara's Veil
-	-- 52986,		--Heartblossom
-
-	52185,		--Elementium Ore
-	53038,		--Obsidium Ore
-
-	52306,				--Jasper Ring
-	52310,				--Jasper Ring (Rare)
-	52307,				--Alicite Pendant
-	52312,				--Alicite Pendant (Rare)
-	52309,				--Nightstone Choker
-	52314,				--Nightstone Choker (Rare)
-	52492,		--Carnelian Spikes
-	52329,		--Life
+	[52988]=MILLING,		-- Whiptail
+	[52987]=MILLING,		-- Twilight Jasmine
+	-- [52983]=MILLING,		-- Cinderbloom
+	[52984]=MILLING,		-- Stormvine
+	-- [52985]=MILLING,		-- Azshara's Veil
+	-- [52986]=MILLING,		-- Heartblossom
+	[52185]=PROSPECTING,	-- Elementium Ore
+	[53038]=PROSPECTING,	-- Obsidium Ore
+	[52306]=DISENCHANT,		-- Jasper Ring
+	[52310]=DISENCHANT,		-- Jasper Ring (Rare)
+	[52307]=DISENCHANT,		-- Alicite Pendant
+	[52312]=DISENCHANT,		-- Alicite Pendant (Rare)
+	[52309]=DISENCHANT,		-- Nightstone Choker
+	[52314]=DISENCHANT,		-- Nightstone Choker (Rare)
+	[52492]=DISENCHANT,		-- Carnelian Spikes
+	[61978]=MAILING,
+	[52555]=MAILING,
+	-- [52329]=,		-- Life
 }
+
+VM.ConvertList={
+	[52718]=3,			-- Lesser Celestial Essence
+	[52720]=3,			-- Small Heavenly Shard
+}
+
 VM.CraftList={
-	43124,		--Ethereal Ink
-	43126,		--Ink of the Sea
-	61978,		--Blackfallow Ink
-	61981,		--Inferno Ink
-	
-	52306,		--Jasper Ring
-	52307,		--Alicite Pendant
-	52309,		--Nightstone Choker
+	[43124]=80,				-- Ethereal Ink
+	[43126]=80,				-- Ink of the Sea
+	[61978]=80,				-- Blackfallow Ink
+	[61981]=80,				-- Inferno Ink
+	[52306]=12,				-- Jasper Ring
+	[52307]=12,				-- Alicite Pendant
+	[52309]=12,				-- Nightstone Choker
 }
+
 if UnitName("player")=="\195\141\195\172" or UnitName("player")=="凌蓝果树" or UnitName("player")=="那个图腾" then
 	VM.MailList={
 		[61978]="歆颜尐美",		--Blackfallow Ink
 		[61979]="歆颜尐美",		--Ashen Pigment
 		[61981]="歆颜尐美",		--Inferno Ink
+		[61980]="歆颜尐美",		--Burning Embers
 	}
 else
 	VM.MailList={
@@ -47,7 +63,8 @@ else
 		[52555]="Enchinv",	--Hypnotic Dust
 		[52718]="Luxinv",	--Lesser Celestial Essence
 		[52719]="Luxinv",	--Greater Celestial Essence
-
+		[52721]="Luxinv",	--Heavenly Shard
+		[52720]="Luxinv",	--Small Heavenly Shard
 		[52178]="Jcinv",		--Zephyrite
 		[{	52179,				--Alicite
 			52180,				--Nightstone
@@ -62,19 +79,41 @@ else
 			52192,				--Dream Emerald
 			52194,				--Demonseye
 			52195,				--Amberjewel
-		}]="Jcinv",
+		}]="Luxinv",
+		[{	52306,				--Jasper Ring
+			52310,				--Jasper Ring (Rare)
+			52307,				--Alicite Pendant
+			52312,				--Alicite Pendant (Rare)
+			52309,				--Nightstone Choker
+			52314,				--Nightstone Choker (Rare)
+		}]="Weiba",
 	}
 end
 
+function VM:GetNextDestroyingItem()
+	for bag=0,NUM_BAG_SLOTS do
+		for slot=1,GetContainerNumSlots(bag) do
+			local itemID=self:GetItemID(GetContainerItemLink(bag,slot))
+			local spellID=self.DEList[itemID]
+			if spellID and IsSpellKnown(spellID) then
+				local texture, count, locked, quality, readable, lootable, link = GetContainerItemInfo(bag, slot)
+				if not locked and count>=self.DERequiredCount[spellID] then
+					return spellID, bag, slot
+				end
+			end
+		end
+	end
+end
+
+function VM:GetNextConvertingItem()
+	for itemID, minCount in pairs(VM.ConvertList) do
+		if GetItemCount(itemID)>=minCount then
+			return itemID
+		end
+	end
+end
+
 VM:NewProcessor("AutoCraft",function(self)
-	local mailList={[{
-		52306,				--Jasper Ring
-		52310,				--Jasper Ring (Rare)
-		52307,				--Alicite Pendant
-		52312,				--Alicite Pendant (Rare)
-		52309,				--Nightstone Choker
-		52314,				--Nightstone Choker (Rare)
-	}]="Weiba",}
 	while true do
 		self:WaitExp(nil,self.IsPlayerIdle)
 		for index,item in ipairs(VM.CraftList) do
@@ -82,7 +121,7 @@ VM:NewProcessor("AutoCraft",function(self)
 			if not self:CanLootItem(item,1) then break end
 		end
 		if self:IsMailOpen() then
-			for itemID,sendTarget in pairs(mailList) do
+			for itemID,sendTarget in pairs(VM.MailList) do
 				self:MailBulkItem(itemID,sendTarget)
 			end
 			self:SleepFrame(10,0.5)
@@ -102,46 +141,84 @@ VM:NewProcessor("AutoCraft",function(self)
 end)
 
 VM:NewProcessor("AutoDE",function(self)
-	local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
-	assert(autoDEFrame,"Cant find Enchantrix")
+	-- local autoDEFrame=AutoDEPromptYes and AutoDEPromptYes:GetParent()
+	-- assert(autoDEFrame,"Cant find Enchantrix")
 	
-	local function isIdle()
-		if LootFrame:IsShown() then return false end
-		if UnitCastingInfo("player") then return false end
-		if GetUnitSpeed("player")~=0 then return false end
-		if IsFalling("player") then return false end
-		if UnitIsDeadOrGhost("player") then return false end
-		return autoDEFrame:IsShown()
-	end
+	-- local function isIdle()
+		-- if not self:IsPlayerIdle() then return false end
+		-- return autoDEFrame:IsShown()
+	-- end
 	local enableAutoSend=self:MsgBox("Do you want to enable AutoSend?","n")
-	
-	while true do
-		self:WaitExp(nil,isIdle)
-		self:HardDrive(true,"/click AutoDEPromptYes")
-		self:WaitExp(nil,isIdle)
-		self:SleepFrame(10,0.5)
-
-		if self:IsTradeskillOpen() then
-			for index,item in ipairs(VM.CraftList) do
-				if self:GetCraftingNumAvailable(item)>=80 then
-					self:CraftItem(item)
+	local DEList={}
+	for itemID, spellID in pairs(VM.DEList) do
+		if spellID==MAILING then
+			for item, name in pairs(VM.MailList) do
+				if self:reverse(item)[itemID] and name~=UnitName("player") then
+					tinsert(DEList, itemID)
+					break
 				end
 			end
+		elseif IsSpellKnown(spellID) then
+			tinsert(DEList, itemID)
+		end
+	end
+	
+	local function isIdle(spellID, itemID)
+		if spellID and GetSpellCooldown(spellID)>0 then
+			return false
+		end
+		if itemID and GetItemCooldown(itemID)>0 then
+			return false
+		end
+		return self:IsPlayerIdle()
+	end
+	
+	while true do
+		
+		repeat
+			local spellID, bag, slot=self:GetNextDestroyingItem()
+			if spellID and isIdle(spellID) then
+				self:HardDriveRaw(true, ("/cast %s\n/use %d %d"):format(GetSpellInfo(spellID), bag, slot))
+			else
+				self:YieldThread()
+			end
+		until not spellID
+		
+		repeat
+			local itemID=self:GetNextConvertingItem()
+			if itemID and isIdle(nil, itemID) then
+				self:HardDriveRaw(true, ("/use %s"):format(GetItemInfo(itemID)))
+			else
+				self:YieldThread()
+			end
+		until not itemID
+		
+		if self:IsTradeskillOpen() then
+			repeat
+				local crafted
+				for item, numCraft in pairs(VM.CraftList) do
+					local available, index=self:GetCraftingNumAvailableInMail(item)
+					if available>=numCraft then
+						self:TakeTradeskillRegent(item, numCraft)
+						self:CraftItem(item, numCraft)
+						crafted=true
+						break
+					end
+				end
+			until not crafted
 		end
 
 		if enableAutoSend and self:IsMailOpen() then
 			for itemID,sendTarget in pairs(VM.MailList) do
 				self:MailBulkItem(itemID,sendTarget)
 			end
-			-- self:SleepFrame(10,0.5)
 		end
 
 		if self:IsMailOpen() then
-			for index,takeItemID in ipairs(VM.DEList) do
-				self:LootMailItem(takeItemID)
-			end
-			-- self:SleepFrame(10,0.5)
+			self:LootMailItem(DEList)
 		end
+		
+		self:YieldThread()
 	end
 end,
 function (self)
@@ -175,7 +252,7 @@ VM:NewProcessor("Remail",function (self)
 	end
 end)
 
-function VM:PostalOpenAll()
+function VM:PostalOpenAll(timeOut)
 	if not IsAddOnLoaded("Postal") then LoadAddOn("Postal") end
 	local Postal = LibStub("AceAddon-3.0"):GetAddon("Postal",true)
 	assert(Postal,"Cannot find Postal")
@@ -197,7 +274,7 @@ function VM:PostalOpenAll()
 		elseif self:HasMailToLoot() then
 			Postal_OpenAll:OpenAll()
 		end
-	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>300
+	until PostalOpenAllButton:GetText()==PostalL["Open All"] or time()-startTime>(timeOut or 300)
 	return count
 end
 
@@ -326,7 +403,7 @@ function VM:CancelAuctions(AHPath,AuctioneerName)
 			self:HardDrive(true,"/click TSMAucCancelButton")
 			local text=Cancel.frame.button:GetText()
 			count=tonumber(text:match("Cancel Auction %d+ / (%d+)")) or count
-		end
+		end	
 		self:YieldThread()
 	end
 	TSMAuc.Cancel:StopCanceling()
@@ -351,7 +428,7 @@ function VM:OpenMail(timeout)
 	return true
 end
 
-function VM:TakeMails(MailPath,MailFacing,View)
+function VM:TakeMails(MailPath,MailFacing,View,timeOut)
 	local count=0
 	local mailopen=self:IsMailOpen()
 	if not mailopen then
@@ -363,7 +440,7 @@ function VM:TakeMails(MailPath,MailFacing,View)
 	end
 	if mailopen then
 		print("open mail")
-		count=self:PostalOpenAll()
+		count=self:PostalOpenAll(timeOut)
 		-- self:WaitSteadyValue(nil,nil,function()
 			-- local cur,total=GetInboxNumItems()
 			-- count=total-cur
@@ -387,7 +464,7 @@ VM:NewProcessor("DalaSell",function (self)
 	local prevTakeMail=time()
 	while true do
 		if self:IsMailOpen() or count>0 or time()-prevTakeMail>1200 then
-			count=self:TakeMails(MailPath,MailFacing,1)
+			count=self:TakeMails(MailPath,MailFacing,1,600)
 			prevTakeMail=time()
 		end
 		print("posting auctions")
@@ -423,11 +500,13 @@ VM:NewProcessor("ExodarSell",function (self)
 	while true do
 		if self:IsMailOpen() or (self:CalcDistanceFromPlayer(unpack(MailPath[#MailPath]))<=MailPath[#MailPath][3]) or count>0 or time()-prevTakeMail>1200 then
 			count=self:TakeMails(MailPath,MailFacing,1)
+			prevTakeMail=time()
+		end
+		if self:IsMailOpen() then
 			local gold=(floor(GetMoney()/10000/goldReserve)-1)*goldReserve
 			if gold>=sendGoldMin then
 				self:MailMoney(gold,sendGoldTarget)
 			end
-			prevTakeMail=time()
 		end
 		print("posting auctions")
 		self:PostAuctions(AHPath,AuctioneerName)
@@ -436,8 +515,8 @@ VM:NewProcessor("ExodarSell",function (self)
 			self:Sleep(1)
 			count=count+self:CancelAuctions(AHPath,AuctioneerName)
 			print("count",count)
+			self:PostAuctions(AHPath,AuctioneerName)
 		end
-		self:PostAuctions(AHPath,AuctioneerName)
 	end
 end,
 function (self)

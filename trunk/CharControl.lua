@@ -39,6 +39,14 @@ function VM:WaitStopMoving()
 	until cx==px and cy==py
 end
 
+function VM:InteractUnit(unit)
+	if unit=="target" then
+		self:SetStatus("keypress_vk",0xDE,0)
+		print(self:WaitSecureHook(10, "InteractUnit"))
+		self:SetStatus("none")
+	end
+end
+
 function VM:SendKeyDuration(ttm,vk)
 	local ttm_ms=ttm*1000
 	if ttm_ms<20 then
@@ -152,9 +160,10 @@ end
 	-- until dist<=tolerance
 -- end
 
-function VM:CalcDistance(fromX,fromY,toX,toY,map,floor)
-	if not (map and floor) then map,floor=self:GetPlayerPos() end
-	return Astrolabe:ComputeDistance(map,floor,fromX,fromY,map,floor,toX,toY)
+function VM:CalcDistance(fromX,fromY,toX,toY,fromMap,fromFloor,toMap,toFloor)
+	if not (fromMap and fromFloor) then fromMap,fromFloor=self:GetPlayerPos() end
+	if not (toMap and toFloor) then toMap, toFloor=fromMap, fromFloor end
+	return Astrolabe:ComputeDistance(fromMap,fromFloor,fromX,fromY,toMap,toFloor,toX,toY)
 end
 
 function VM:CalcDistanceFromPlayer(toX,toY)
@@ -162,11 +171,35 @@ function VM:CalcDistanceFromPlayer(toX,toY)
 	return self:CalcDistance(x,y,toX,toY,map,floor)
 end
 
+function VM:CalcDistanceToSegment(X1, Y1, XA, YA, XB, YB, map, floor)
+	if not (map and floor) then map,floor=self:GetPlayerPos() end
+	local seg=self:CalcDistance(XA, YA, XB, YB, map, floor, map, floor)
+	local distA=self:CalcDistance(X1, Y1, XA, YA, map, floor, map, floor)
+	local distB=self:CalcDistance(X1, Y1, XB, YB, map, floor, map, floor)
+	local threshold=0.001
+	
+	if seg<threshold then
+		return min(distA+distB)
+	elseif distA<threshold then
+		return distA
+	elseif distB<threshold then
+		return distB
+	elseif distB*distB>(distA*distA+seg*seg) then
+		return distA
+	elseif distA*distA>(distB*distB+seg*seg) then
+		return distB
+	else
+		local l=(distA+distB+seg)/2
+		local s=sqrt(l*(l-distA)*(l-distB)*(1-seg))
+		return 2*s/seg
+	end
+end
+
 function VM:CalcDirection(fromX,fromY,toX,toY,map,floor)
 	if not (map and floor) then map,floor=self:GetPlayerPos() end
 	local sgnX,sgnY=sgn(toX-fromX),sgn(toY-fromY)
-	local xoffset=self:CalcDistance(fromX,fromY,toX,fromY)
-	local yoffset=self:CalcDistance(fromX,fromY,fromX,toY)
+	local xoffset=self:CalcDistance(fromX,fromY,toX,fromY,map,floor)
+	local yoffset=self:CalcDistance(fromX,fromY,fromX,toY,map,floor)
 	--print(xoffset,yoffset)
 	local ang=atan(yoffset/xoffset)
 	return (1+0.5*sgnX)*pi-ang*sgnX*sgnY
@@ -197,23 +230,7 @@ end
 			-- self.SecureRangeChecker
 		-- self:Sleep(self.freq)
 	-- end
--- end,40)
-
-VM.SpeedTracker=VM.SpeedTracker or VM:NewThread(function (self)
-	local pmap,pfloor,px,py,ptime,cmap,cfloor,cx,cy,ctime
-	cmap,cfloor,cx,cy=self:GetPlayerPos()
-	ctime=GetTime()
-	while true do
-		pmap,pfloor,px,py,ptime=cmap,cfloor,cx,cy,ctime
-		self:Sleep(self.freq)
-		cmap,cfloor,cx,cy=self:GetPlayerPos()
-		ctime=GetTime()
-		local dist=self:CalcDistance(px,py,cx,cy) or 0
-		self.playerSpeed=dist/(ctime-ptime)
-	end
-end,40)
-VM.SpeedTracker.freq=0.5
-VM.SpeedTracker:Suspend()
+-- end)
 
 VM:NewProcessor("NPCScan",function(self)
 	route={
@@ -234,7 +251,7 @@ VM:NewProcessor("NPCScan",function(self)
 end,function (self) self:SetStatus("none") end)
 
 --[[
-VM.RouteTracker=VM:NewThread(function(self)
+VM:NewThread("RouteTracker", function(self)
 	VM.db.Routes=VM.db.Routes or {}
 	if self:MsgBox("Do you really want to create a route now?","n") then
 		local name=self:InputBox("Name for new route:")

@@ -100,8 +100,13 @@ function private.tableRemove(table,item)
 end
 
 function private.MT_index(table,key)
-	local ext=rawget(table,"externalLib")
+	-- local ext=rawget(table,"externalLib")
+	local ext=p(table).externalLib
 	return control[key] or (ext and ext[key]) or rawget(table,key)
+end
+
+function private.MT_tostring(table)
+	return table:GetName()
 end
 
 function control:error(message,level)	--Generate an error for a thread if it's not in silent mode, and return THREAD_ERROR token
@@ -265,8 +270,23 @@ function control:SetPriority(prio)
 	end
 end
 
-function control:GetProperty()
-	return p(self)
+function control:GetProperty(key)
+	return p(self)[key]
+end
+
+function control:SetProperty(key, value)
+	p(self)[key]=value
+end
+
+function control:GetName()
+	local threadName=p(self).threadName or "<unnamed thread>"
+	local threadID=p(self).threadID or "0"
+	return threadName..":"..threadID
+end
+
+function control:SetName(name)
+	if not type(name)=="string" then return end
+	p(self).threadName=name
 end
 
 --------------------------------------------
@@ -278,10 +298,14 @@ function lib:New(func,prio,callback,yieldCallback)
 	if prio and type(prio)~="number" then error(("Usage: %s:New(func,prio,callback) :'prio' - number expected, got %s."):format(_GlobalName,type(prio))) end
 	if callback and type(callback)~="function" then error(("Usage: %s:New(func,prio,callback) :'callback' - function expected, got %s."):format(_GlobalName,type(callback))) end
 	
-	local thread=setmetatable({},{
+	local thread={}
+	local threadID=tostring(thread):match("table:%s*(%S+)")
+	local MT={
 		__index=private.MT_index,
+		__tostring=private.MT_tostring,
 		___LibThread={
 			VERSION=_VERSION,
+			threadID=threadID,
 			coroutine=coroutine.create(func),
 			totalElapsed=0,
 			totalCount=0,
@@ -290,7 +314,8 @@ function lib:New(func,prio,callback,yieldCallback)
 			prio=prio or 50,
 			eventList={},
 		},
-	})
+	}
+	setmetatable(thread, MT)
 	if not private.running or p(private.running).prio>prio then	--If the dispatcher is not currently processing a thread
 		private.insertByPrio(threads,thread)			--or the processing thread is higher priority than new one
 	else
