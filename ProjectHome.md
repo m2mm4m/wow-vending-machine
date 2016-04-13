@@ -1,0 +1,1 @@
+This suite contains AHK script and some wow addon to do a limited automation such as moving character, auto-milling/prospecting/disenchanting, auto-mailing, auto-undercutting on AH etc.
